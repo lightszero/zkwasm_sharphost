@@ -16,13 +16,14 @@ namespace host
 
         public static async Task onSetup(HttpContext context)
         {
-            var form = await FormData.FromRequest(context.Request);
-            var data = form.mapFiles["wasm"];
-            var hashstr = HashTool.CalcHashStr(data) + "_" + data.Length;
             var jsonResult = new JObject();
-            jsonResult["hash"] = hashstr;
             try
             {
+                var form = await FormData.FromRequest(context.Request);
+                var data = form.mapFiles["wasm"];
+                var hashstr = HashTool.CalcHashStr(data) + "_" + data.Length;
+               
+                jsonResult["hash"] = hashstr;
                 var state = FileTool.LockState(hashstr);
                 if (state == FileTool.FileState.InSetup)
                 {
@@ -51,6 +52,9 @@ namespace host
 
             try
             {
+                context.Response.StatusCode = 200;
+                context.Response.ContentType = "text/plain;charset=utf-8";
+
                 await context.Response.WriteAsync(jsonResult.ToString());
             }
             catch (Exception ex)
