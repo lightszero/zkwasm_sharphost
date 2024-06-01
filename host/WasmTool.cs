@@ -35,6 +35,13 @@ namespace host
                     state = ProcessState.Done;
                     break;
                 }
+
+                //prove error tag
+                if(l.IndexOf("thread 'main' panicked at")==0)
+                {
+                    state = ProcessState.Fail;
+                    break;
+                }
             }
         }
     }
@@ -70,6 +77,7 @@ namespace host
 
             Func<string, CancellationToken, Task> onOutput = async (txt, c) =>
             {
+                Console.WriteLine(txt);
                 outputs.Add(txt);
             };
 
@@ -124,8 +132,29 @@ namespace host
     = new System.Collections.Concurrent.ConcurrentDictionary<string, ProcessInfo>();
         public static bool GetSetupState(string hash, out ProcessInfo state)
         {
-            return g_wasm_setupstate.TryGetValue(hash, out state);
+            var b = g_wasm_setupstate.TryGetValue(hash, out state);
+            if (b)
+                return b;
 
+            var finalfilewasm = System.IO.Path.Combine(g_wasmout, hash + ".wasm");
+            var finalfilewasmstate = System.IO.Path.Combine(g_wasmout, hash + ".wasm.state");
+            var finalparamdir = System.IO.Path.Combine(g_wasmout, hash + "_param");
+            if (System.IO.File.Exists(finalfilewasm) && System.IO.File.Exists(finalfilewasmstate))
+            {
+                var statelines = System.IO.File.ReadAllLines(finalfilewasmstate);
+                if (statelines.Length > 0)
+                {
+                    ProcessInfo wstate = new ProcessInfo();
+                    g_wasm_setupstate[hash] = wstate;
+                    wstate.logs = new List<string>(statelines);
+                    wstate.CheckState();
+                    if (wstate.state == ProcessState.Done)
+                        state = wstate;
+
+                    return true;
+                }
+            }
+            return b;
         }
         public static bool GetProveSate(string hash, out ProcessInfo state)
         {
@@ -227,9 +256,13 @@ namespace host
 
             var finalfilewasm = System.IO.Path.Combine(g_wasmout, hashWasm + ".wasm");
             var finalparamdir = System.IO.Path.Combine(g_wasmout, hashWasm + "_param");
-            var finalProvedir = System.IO.Path.Combine(g_wasmout, hashWasm+"/" + hashWasm);
-            var finalfilewasmstate = System.IO.Path.Combine(finalProvedir,".state");
-            if ( System.IO.File.Exists(finalfilewasmstate))
+            var finalProvedir = System.IO.Path.Combine(g_wasmout, hashWasm + "/" + hashInput);
+            if (System.IO.Directory.Exists(finalProvedir) == false)
+            {
+                System.IO.Directory.CreateDirectory(finalProvedir);
+            }
+            var finalfilewasmstate = System.IO.Path.Combine(finalProvedir, ".state");
+            if (System.IO.File.Exists(finalfilewasmstate))
             {
                 //如果文件存在
                 //判断一下状态
@@ -249,16 +282,15 @@ namespace host
                 g_wasm_provestate[hash] = wstate;
                 wstate.state = ProcessState.Doing;
                 wstate.logs = new List<string>();
-               using  var ms = new System.IO.MemoryStream(data);
-                
-           
-                ms.Read(buf, 0, 8);
+                using var ms = new System.IO.MemoryStream(data);
+
+
 
                 //全部大头u64，第一个是长度，分别是private 和 public
-             
-                
 
-                string privalues="";
+
+
+                string privalues = "";
                 string pubvalues = "";
                 {//读取Input并拆开
                     long vpri = ReadI64Big(ms);
@@ -269,12 +301,12 @@ namespace host
                     }
                     long vpub = ReadI64Big(ms);
                     pubvalues += vpub + ":i64";
-                    for (var i = 0; i < vpri; i++)
+                    for (var i = 0; i < vpub; i++)
                     {
                         pubvalues += "," + ReadI64Big(ms) + ":i64";
                     }
                 }
-                string prove = $" --params {finalparamdir} root  prove --wasm {finalfilewasm} --output {finalProvedir} --private:{privalues} --public:{pubvalues}";
+                string prove = $" --params {finalparamdir} root  prove --wasm {finalfilewasm} --output {finalProvedir} --private {privalues} --public {pubvalues}";
 
                 await RunCmd(g_wasmpath, g_wasmbin, prove, wstate.logs);
                 System.IO.File.Delete(finalfilewasmstate);

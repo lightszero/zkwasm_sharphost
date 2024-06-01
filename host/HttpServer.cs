@@ -140,12 +140,12 @@ namespace host
             {
                 context.Response.StatusCode = 200;
                 context.Response.ContentType = "text/plain;charset=utf-8";
-                Console.WriteLine("Setup 返回:" + jsonResult.ToString());
+                Console.WriteLine("Prove 返回:" + jsonResult.ToString());
                 await context.Response.WriteAsync(jsonResult.ToString());
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Setup 返回信息失败");
+                Console.WriteLine("Prove 返回信息失败");
             }
         }
     }
