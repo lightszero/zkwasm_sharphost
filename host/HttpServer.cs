@@ -22,33 +22,40 @@ namespace host
                 var form = await FormData.FromRequest(context.Request);
                 var data = form.mapFiles["wasm"];
                 var hashstr = HashTool.CalcHashStr(data) + "_" + data.Length;
-               
+
                 jsonResult["hash"] = hashstr;
-                var state = FileTool.LockState(hashstr);
-                if (state == FileTool.FileState.InSetup)
+                var state = await WasmTool.SetupWasm(hashstr, data);
+                if (state.state == FileState.InSetup)
                 {
                     jsonResult["code"] = -1;
                     jsonResult["txt"] = "该wasm 正在Setup";
+
                     //正在Setup，别凑热闹
                 }
-                else if (state == FileTool.FileState.SetupDone)
+                if (state.state == FileState.SetupFail)
+                {
+                    jsonResult["code"] = -2;
+                    jsonResult["txt"] = "该wasm Setup失败";
+                    //正在Setup，别凑热闹
+                }
+                else if (state.state == FileState.SetupDone)
                 {
                     //已经有了，别凑热闹
+                    jsonResult["code"] = 1;
+                    jsonResult["txt"] = "该wasm 已经Setup";
                 }
                 else
                 {
 
                 }
+                jsonResult["logs"] = new JArray(state.logs.ToArray());
             }
             catch (Exception ex)
             {
                 jsonResult["code"] = -100;
                 jsonResult["txt"] = "未知错误:" + ex.ToString();
             }
-            finally
-            {
-                FileTool.UnLockState();
-            }
+
 
             try
             {

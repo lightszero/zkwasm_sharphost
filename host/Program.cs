@@ -14,6 +14,12 @@ namespace host
             var port = (int)info["port"];
             Console.WriteLine("ZKWASM simple Server at :" + port);
 
+            WasmTool.Init(
+                info["zkwasm"]["zkwasmpath"].ToString(),
+                info["zkwasm"]["zkwasmbin"].ToString(),
+                info["zkwasm"]["zkwasm_wasmpath"].ToString()
+                );
+
             light.http.server.httpserver serv = new light.http.server.httpserver();
             serv.SetFailAction(on404);
             serv.SetJsonRPCFail("/zkwasm", onRPCFail);

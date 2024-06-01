@@ -8,6 +8,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="CliWrap" Version="3.6.6" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\lib.http\lib.http.csproj" />
   </ItemGroup>
 

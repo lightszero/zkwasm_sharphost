@@ -1,5 +1,9 @@
 ﻿{
-  "zkwasmpath": "~/zkwasm/target/release",
-  "zkwasmbin": "zkwasm-cli",
+  "zkwasm": {
+    "zkwasmpath": "~/zkwasm/target/release",
+    "zkwasmbin": "zkwasm-cli",
+    "zkwasm_wasmpath": "~/zkwasmsrc"
+  }
+  
   "port": 888
 }
