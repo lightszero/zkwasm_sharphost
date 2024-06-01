@@ -9,30 +9,30 @@ using static host.WasmTool;
 
 namespace host
 {
-    public enum FileState
+    public enum ProcessState
     {
         NotExist,
-        InSetup,
-        SetupDone,
-        SetupFail,
+        Doing,
+        Done,
+        Fail,
     }
 
-    public class WasmState
+    public class ProcessInfo
     {
-        public FileState state;
+        public ProcessState state;
         public List<string> logs;
         public void CheckState()
         {
-            foreach(var l in logs)
+            foreach (var l in logs)
             {
-                if(l.IndexOf("Error:") ==0)
+                if (l.IndexOf("Error:") == 0)
                 {
-                    state = FileState.SetupFail;
+                    state = ProcessState.Fail;
                     break;
                 }
-                if(l.IndexOf("The configuration is saved at")==0)
+                if (l.IndexOf("The configuration is saved at") == 0)
                 {
-                    state = FileState.SetupDone;
+                    state = ProcessState.Done;
                     break;
                 }
             }
@@ -74,7 +74,7 @@ namespace host
             };
 
             var exe = System.IO.Path.Combine(path, execute);
-            var basharg = "-c \"" + exe + " " + args+"\"";
+            var basharg = "-c \"" + exe + " " + args + "\"";
             var r = await
             CliWrap.Cli.Wrap("/bin/bash")
 
@@ -118,23 +118,35 @@ namespace host
         }
 
 
-        static System.Collections.Concurrent.ConcurrentDictionary<string, WasmState> g_wasmstate
-            = new System.Collections.Concurrent.ConcurrentDictionary<string, WasmState>();
-        public static async Task<WasmState> SetupWasm(string filename, byte[] data)
+        static System.Collections.Concurrent.ConcurrentDictionary<string, ProcessInfo> g_wasm_setupstate
+            = new System.Collections.Concurrent.ConcurrentDictionary<string, ProcessInfo>();
+        static System.Collections.Concurrent.ConcurrentDictionary<string, ProcessInfo> g_wasm_provestate
+    = new System.Collections.Concurrent.ConcurrentDictionary<string, ProcessInfo>();
+        public static bool GetSetupState(string hash, out ProcessInfo state)
         {
-            if (g_wasmstate.TryGetValue(filename, out var state))
+            return g_wasm_setupstate.TryGetValue(hash, out state);
+
+        }
+        public static bool GetProveSate(string hash, out ProcessInfo state)
+        {
+            return g_wasm_provestate.TryGetValue(hash, out state);
+
+        }
+        public static async Task<ProcessInfo> SetupWasm(string hash, byte[] data)
+        {
+            if (g_wasm_setupstate.TryGetValue(hash, out var state))
             {
                 //如果已经完成，就别Setup了
-                if (state.state == FileState.SetupDone)
+                if (state.state == ProcessState.Done)
                     return state;
-                if (state.state == FileState.InSetup)
+                if (state.state == ProcessState.Doing)
                     return state;
 
             }
 
-            var finalfilewasm = System.IO.Path.Combine(g_wasmout, filename + ".wasm");
-            var finalfilewasmstate = System.IO.Path.Combine(g_wasmout, filename + ".wasm.state");
-            var finalparamdir = System.IO.Path.Combine(g_wasmout, filename + "_param");
+            var finalfilewasm = System.IO.Path.Combine(g_wasmout, hash + ".wasm");
+            var finalfilewasmstate = System.IO.Path.Combine(g_wasmout, hash + ".wasm.state");
+            var finalparamdir = System.IO.Path.Combine(g_wasmout, hash + "_param");
             if (System.IO.File.Exists(finalfilewasm) && System.IO.File.Exists(finalfilewasmstate))
             {
                 //如果文件存在
@@ -142,18 +154,18 @@ namespace host
                 var statelines = System.IO.File.ReadAllLines(finalfilewasmstate);
                 if (statelines.Length > 0)
                 {
-                    WasmState wstate = new WasmState();
-                    g_wasmstate[filename] = wstate;
+                    ProcessInfo wstate = new ProcessInfo();
+                    g_wasm_setupstate[hash] = wstate;
                     wstate.logs = new List<string>(statelines);
                     wstate.CheckState();
-                    if (wstate.state == FileState.SetupDone)
+                    if (wstate.state == ProcessState.Done)
                         return wstate;
                 }
             }
             {
-                WasmState wstate = new WasmState();
-                g_wasmstate[filename] = wstate;
-                wstate.state = FileState.InSetup;
+                ProcessInfo wstate = new ProcessInfo();
+                g_wasm_setupstate[hash] = wstate;
+                wstate.state = ProcessState.Doing;
                 wstate.logs = new List<string>();
                 System.IO.File.WriteAllBytes(finalfilewasm, data);
                 Console.WriteLine("save file:" + finalfilewasm);
@@ -167,6 +179,110 @@ namespace host
             }
 
         }
+        static byte[] buf = new byte[8];
+        static byte[] buf2 = new byte[8];
+        static long ReadI64Big(System.IO.Stream stream)
+        {
+            stream.Read(buf, 0, 8);
+            if (BitConverter.IsLittleEndian)
+            {
+                for (var i = 0; i < 8; i++)
+                {
+                    buf2[7 - i] = buf[i];
+                }
+                return BitConverter.ToInt64(buf2, 0);
+            }
+            else
+            {
+                return BitConverter.ToInt64(buf, 0);
+            }
+        }
+        static ulong ReadU64Big(System.IO.Stream stream)
+        {
+            stream.Read(buf, 0, 8);
+            if (BitConverter.IsLittleEndian)
+            {
+                for (var i = 0; i < 8; i++)
+                {
+                    buf2[7 - i] = buf[i];
+                }
+                return BitConverter.ToUInt64(buf2, 0);
+            }
+            else
+            {
+                return BitConverter.ToUInt64(buf, 0);
+            }
+        }
+        public static async Task<ProcessInfo> ProveWasm(string hashWasm, string hashInput, byte[] data)
+        {
+            var hash = hashWasm + "_" + hashInput;
+            if (g_wasm_provestate.TryGetValue(hash, out var state))
+            {
+                //如果已经完成，就别Prove了
+                if (state.state == ProcessState.Done)
+                    return state;
+                if (state.state == ProcessState.Doing)
+                    return state;
+            }
 
+            var finalfilewasm = System.IO.Path.Combine(g_wasmout, hashWasm + ".wasm");
+            var finalparamdir = System.IO.Path.Combine(g_wasmout, hashWasm + "_param");
+            var finalProvedir = System.IO.Path.Combine(g_wasmout, hashWasm+"/" + hashWasm);
+            var finalfilewasmstate = System.IO.Path.Combine(finalProvedir,".state");
+            if ( System.IO.File.Exists(finalfilewasmstate))
+            {
+                //如果文件存在
+                //判断一下状态
+                var statelines = System.IO.File.ReadAllLines(finalfilewasmstate);
+                if (statelines.Length > 0)
+                {
+                    ProcessInfo wstate = new ProcessInfo();
+                    g_wasm_provestate[hash] = wstate;
+                    wstate.logs = new List<string>(statelines);
+                    wstate.CheckState();
+                    if (wstate.state == ProcessState.Done)
+                        return wstate;
+                }
+            }
+            {
+                ProcessInfo wstate = new ProcessInfo();
+                g_wasm_provestate[hash] = wstate;
+                wstate.state = ProcessState.Doing;
+                wstate.logs = new List<string>();
+               using  var ms = new System.IO.MemoryStream(data);
+                
+           
+                ms.Read(buf, 0, 8);
+
+                //全部大头u64，第一个是长度，分别是private 和 public
+             
+                
+
+                string privalues="";
+                string pubvalues = "";
+                {//读取Input并拆开
+                    long vpri = ReadI64Big(ms);
+                    privalues += vpri + ":i64";
+                    for (var i = 0; i < vpri; i++)
+                    {
+                        privalues += "," + ReadI64Big(ms) + ":i64";
+                    }
+                    long vpub = ReadI64Big(ms);
+                    pubvalues += vpub + ":i64";
+                    for (var i = 0; i < vpri; i++)
+                    {
+                        pubvalues += "," + ReadI64Big(ms) + ":i64";
+                    }
+                }
+                string prove = $" --params {finalparamdir} root  prove --wasm {finalfilewasm} --output {finalProvedir} --private:{privalues} --public:{pubvalues}";
+
+                await RunCmd(g_wasmpath, g_wasmbin, prove, wstate.logs);
+                System.IO.File.Delete(finalfilewasmstate);
+                //判断编译结果
+                System.IO.File.WriteAllLines(finalfilewasmstate, wstate.logs);
+                wstate.CheckState();
+                return wstate;
+            }
+        }
     }
 }
