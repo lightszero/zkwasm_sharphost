@@ -16,11 +16,19 @@ namespace host
 
         public static async Task onSetup(HttpContext context)
         {
+            Console.WriteLine("onSetup");
             var jsonResult = new JObject();
             try
             {
                 var form = await FormData.FromRequest(context.Request);
-                var data = form.mapFiles["wasm"];
+                var len = (int)context.Request.ContentLength;
+                byte[] data = new byte[len];
+                var seek = 0;
+                while (seek < len)
+                {
+                    var read = await context.Request.Body.ReadAsync(data, seek, len - seek);
+                    seek += read;
+                }
                 var hashstr = HashTool.CalcHashStr(data) + "_" + data.Length;
 
                 jsonResult["hash"] = hashstr;
@@ -61,7 +69,7 @@ namespace host
             {
                 context.Response.StatusCode = 200;
                 context.Response.ContentType = "text/plain;charset=utf-8";
-
+                Console.WriteLine("Setup 返回:" + jsonResult.ToString());
                 await context.Response.WriteAsync(jsonResult.ToString());
             }
             catch (Exception ex)
