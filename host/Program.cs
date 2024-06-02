@@ -25,6 +25,9 @@ namespace host
             serv.SetJsonRPCFail("/zkwasm", onRPCFail);
             serv.SetHttpAction("/setup", HttpServer.onSetup);
             serv.SetHttpAction("/prove", HttpServer.onProve);
+            serv.SetHttpAction("/getProveData", HttpServer.onGetProve);
+            serv.SetHttpAction("/setProveData", HttpServer.onSetProve);
+            serv.SetHttpAction("/verify", HttpServer.onVerify);
             serv.Start(port);
             while (true)
             {

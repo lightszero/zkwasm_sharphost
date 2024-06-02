@@ -25,6 +25,7 @@ namespace host
         {
             foreach (var l in logs)
             {
+                //Setup State
                 if (l.IndexOf("Error:") == 0)
                 {
                     state = ProcessState.Fail;
@@ -36,10 +37,21 @@ namespace host
                     break;
                 }
 
-                //prove error tag
-                if(l.IndexOf("thread 'main' panicked at")==0)
+                //prove tag
+                if (l.IndexOf("thread 'main' panicked at") == 0)
                 {
                     state = ProcessState.Fail;
+                    break;
+                }
+
+                if (l.IndexOf("[8/8] Saving proof load info to") == 0)
+                {
+                    state = ProcessState.Done;
+                }
+
+                if (l.IndexOf("FORCEDONE") == 0)
+                {
+                    state = ProcessState.Done;
                     break;
                 }
             }
@@ -50,31 +62,6 @@ namespace host
         //执行命令行
         public static async Task RunCmd(string path, string execute, string args, List<string> outputs)
         {
-            //var pro = new ProcessStartInfo();
-            //pro.FileName = "/bin/bash";
-            //pro.UseShellExecute = false;
-            //pro.CreateNoWindow = true;
-            //pro.Arguments = "";
-            //pro.RedirectStandardOutput = true;
-            //pro.RedirectStandardError = true;
-            //pro.RedirectStandardInput = true;
-            //var p = Process.Start(pro);
-            //p.OutputDataReceived += (s, e) =>
-            //{
-            //    outputs.Add(e.Data);
-
-            //};
-            //p.ErrorDataReceived += (s, e) =>
-            //{
-            //    outputs.Add(e.Data);
-            //};
-
-            //p.StandardInput.WriteLine("cd " + path);
-            //p.StandardInput.WriteLine(execute + " " + args);
-            //p.StandardInput.WriteLine("exit");
-            //await p.WaitForExitAsync();
-
-
             Func<string, CancellationToken, Task> onOutput = async (txt, c) =>
             {
                 Console.WriteLine(txt);
@@ -82,17 +69,22 @@ namespace host
             };
 
             var exe = System.IO.Path.Combine(path, execute);
-            var basharg = "-c \"" + exe + " " + args + "\"";
+            var basharg = "-c \"" + exe + " " + args + ">1.txt\"";//直接输出会报错
+
+            Console.WriteLine("try execute " + basharg);
+            
             var r = await
             CliWrap.Cli.Wrap("/bin/bash")
-
                 .WithArguments(basharg)
                 .WithStandardOutputPipe(CliWrap.PipeTarget.ToDelegate(onOutput))
                 .WithStandardErrorPipe(CliWrap.PipeTarget.ToDelegate(onOutput))
                 .WithValidation(CliWrap.CommandResultValidation.None)
                 .ExecuteAsync();
 
-            Console.WriteLine("try execute " + basharg);
+
+            var lines = System.IO.File.ReadAllLines("1.txt");
+            if (lines != null && lines.Length > 0)
+                outputs.AddRange(lines);
             Console.WriteLine("outputs=" + outputs.Count);
 
             return;
@@ -156,9 +148,36 @@ namespace host
             }
             return b;
         }
-        public static bool GetProveSate(string hash, out ProcessInfo state)
+        public static bool GetProveState(string hashWasm, string hashInput, out ProcessInfo state)
         {
-            return g_wasm_provestate.TryGetValue(hash, out state);
+            var hash = hashWasm + "_" + hashInput;
+            var b = g_wasm_provestate.TryGetValue(hash, out state);
+            if (b)
+                return b;
+
+
+            var finalProvedir = System.IO.Path.Combine(g_wasmout, hashWasm + "/" + hashInput);
+            if (System.IO.Directory.Exists(finalProvedir) == false)
+            {
+                System.IO.Directory.CreateDirectory(finalProvedir);
+            }
+            var finalfilewasmstate = System.IO.Path.Combine(finalProvedir, ".state");
+            if (System.IO.File.Exists(finalfilewasmstate))
+            {
+                var statelines = System.IO.File.ReadAllLines(finalfilewasmstate);
+                if (statelines.Length > 0)
+                {
+                    ProcessInfo wstate = new ProcessInfo();
+                    g_wasm_provestate[hash] = wstate;
+                    wstate.logs = new List<string>(statelines);
+                    wstate.CheckState();
+                    if (wstate.state == ProcessState.Done)
+                        state = wstate;
+
+                    return true;
+                }
+            }
+            return b;
 
         }
         public static async Task<ProcessInfo> SetupWasm(string hash, byte[] data)
@@ -306,6 +325,7 @@ namespace host
                         pubvalues += "," + ReadI64Big(ms) + ":i64";
                     }
                 }
+
                 string prove = $" --params {finalparamdir} root  prove --wasm {finalfilewasm} --output {finalProvedir} --private {privalues} --public {pubvalues}";
 
                 await RunCmd(g_wasmpath, g_wasmbin, prove, wstate.logs);
@@ -315,6 +335,28 @@ namespace host
                 wstate.CheckState();
                 return wstate;
             }
+        }
+
+        public static async Task<ProcessInfo> VerifyWasm(string hashWasm, string hashInput)
+        {
+            ProcessInfo wstate = new ProcessInfo();
+            wstate.state = ProcessState.Fail;
+            wstate.logs = new List<string>();
+            var finalparamdir = System.IO.Path.Combine(g_wasmout, hashWasm + "_param");
+            var finalProvedir = System.IO.Path.Combine(g_wasmout, hashWasm + "/" + hashInput);
+            //cargo run --release----params params name verify --output.. / p2
+            string verify = $" --params {finalparamdir} root  verify --output {finalProvedir}";
+
+            await RunCmd(g_wasmpath, g_wasmbin, verify, wstate.logs);
+            foreach(var l in wstate.logs)
+            {
+                if(l.IndexOf("Verification succeeded!")==0)
+                {
+                    wstate.state = ProcessState.Done;
+                    break;
+                }
+            }
+            return wstate;
         }
     }
 }

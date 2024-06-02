@@ -1,0 +1,5 @@
+[1/2] Reading proofs from "/home/lights/zkwasmsrc/08C3DF5E77838F560624A6080A55C4D8EC5CBB18351F40A41B5CC2F963A84CBA_3557/5EF9BC28CBA34F7A20FB06AEDEA09CEAC895F47288B43F33BCB2963055E9B8F5_152"
+loading instance from: root.0.instance.data
+loading instance size: 7
+[2/2] Found 1 proofs, verifying..
+Verification succeeded!
