@@ -4,3 +4,4 @@ obj
 temp
 ~
 node_modules
+/host/1.txt
