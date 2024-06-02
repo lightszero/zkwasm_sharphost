@@ -10,7 +10,9 @@ var buf = fs.readFileSync("./zk.wasm");
 console.log("filelen = " + buf.byteLength);
 
 let op: http.RequestOptions = {
-    host: "127.0.0.1",
+    host: "18.162.246.133",
+    //host: "18.167.90.229",
+    //host: "127.0.0.1",
     port: 888,
     path: "/setup",
     method: "post",

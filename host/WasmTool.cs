@@ -60,7 +60,7 @@ namespace host
     internal static class WasmTool
     {
         //执行命令行
-        public static async Task RunCmd(string path, string execute, string args, List<string> outputs)
+        public static async Task RunCmd(bool combine, string path, string execute, string args, List<string> outputs)
         {
             Func<string, CancellationToken, Task> onOutput = async (txt, c) =>
             {
@@ -69,7 +69,7 @@ namespace host
             };
 
             var exe = System.IO.Path.Combine(path, execute);
-            var basharg = "-c \"" + exe + " " + args + ">1.txt\"";//直接输出会报错
+            var basharg = "-c \"" + exe + " " + args + (combine ? ">1.txt\"" : "\"");//直接输出会报错
 
             Console.WriteLine("try execute " + basharg);
 
@@ -81,10 +81,12 @@ namespace host
                 .WithValidation(CliWrap.CommandResultValidation.None)
                 .ExecuteAsync();
 
-
-            var lines = System.IO.File.ReadAllLines("1.txt");
-            if (lines != null && lines.Length > 0)
-                outputs.AddRange(lines);
+            if (combine)
+            {
+                var lines = System.IO.File.ReadAllLines("1.txt");
+                if (lines != null && lines.Length > 0)
+                    outputs.AddRange(lines);
+            }
             Console.WriteLine("outputs=" + outputs.Count);
 
             return;
@@ -218,7 +220,7 @@ namespace host
                 System.IO.File.WriteAllBytes(finalfilewasm, data);
                 Console.WriteLine("save file:" + finalfilewasm);
                 string setup = $" --params {finalparamdir} root  setup --host default --wasm {finalfilewasm}";
-                await RunCmd(g_wasmpath, g_wasmbin, setup, wstate.logs);
+                await RunCmd(false, g_wasmpath, g_wasmbin, setup, wstate.logs);
                 System.IO.File.Delete(finalfilewasmstate);
                 //判断编译结果
                 System.IO.File.WriteAllLines(finalfilewasmstate, wstate.logs);
@@ -328,7 +330,7 @@ namespace host
 
                 string prove = $" --params {finalparamdir} root  prove --wasm {finalfilewasm} --output {finalProvedir} --private {privalues} --public {pubvalues}";
 
-                await RunCmd(g_wasmpath, g_wasmbin, prove, wstate.logs);
+                await RunCmd(false, g_wasmpath, g_wasmbin, prove, wstate.logs);
                 System.IO.File.Delete(finalfilewasmstate);
                 //判断编译结果
                 System.IO.File.WriteAllLines(finalfilewasmstate, wstate.logs);
@@ -354,14 +356,14 @@ namespace host
         public static void SetProveData(string hashWasm, string hashInput, byte[] data)
         {
             var finalProvedir = System.IO.Path.Combine(g_wasmout, hashWasm + "/" + hashInput);
-            if(System.IO.Directory.Exists(finalProvedir)==false)
+            if (System.IO.Directory.Exists(finalProvedir) == false)
             {
                 System.IO.Directory.CreateDirectory(finalProvedir);
             }
             using var ms = new MemoryStream(data);
             var buf = new byte[4];
             ms.Read(buf, 0, 4);
-            int jsonlen =BitConverter.ToInt32(buf, 0);
+            int jsonlen = BitConverter.ToInt32(buf, 0);
             ms.Read(buf, 0, 4);
             int provelen = BitConverter.ToInt32(buf, 0);
             ms.Read(buf, 0, 4);
@@ -394,7 +396,7 @@ namespace host
             //cargo run --release----params params name verify --output.. / p2
             string verify = $" --params {finalparamdir} root  verify --output {finalProvedir}";
 
-            await RunCmd(g_wasmpath, g_wasmbin, verify, wstate.logs);
+            await RunCmd(true, g_wasmpath, g_wasmbin, verify, wstate.logs);
             foreach (var l in wstate.logs)
             {
                 if (l.IndexOf("Verification succeeded!") == 0)
