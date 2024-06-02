@@ -54,11 +54,12 @@ var buf = tarr;//fs.readFileSync(".bin/input.test");
 console.log("filelen = " + buf.byteLength);
 
 let op: http.RequestOptions = {
-    host: "18.167.90.229",
+    host: "18.162.245.133",
+    //host: "18.167.90.229",
     //host:"127.0.0.1",
     //host: "18.167.90.229",
     port: 888,
-    path: "/prove?hash=C945A3121E3856E9CBBFEB291221B9B067E6646C9F78C42D943ECA7527A907EE_3647",
+    path: "/prove?hash=08C3DF5E77838F560624A6080A55C4D8EC5CBB18351F40A41B5CC2F963A84CBA_3557",
     method: "post",
     headers: {
         'Content-Type': 'application/octet-stream',

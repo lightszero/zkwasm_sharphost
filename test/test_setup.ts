@@ -6,11 +6,11 @@ console.log("Setup Wasm 演示");
 
 //向 "http://127.0.0.1:888/setup" 发送一个uint8array，内容是 zk.wasm
 
-var buf = fs.readFileSync("./zk.wasm");
+var buf = fs.readFileSync(".bin/zk.wasm");
 console.log("filelen = " + buf.byteLength);
 
 let op: http.RequestOptions = {
-    host: "18.162.246.133",
+    host: "18.162.245.133",
     //host: "18.167.90.229",
     //host: "127.0.0.1",
     port: 888,

@@ -6,7 +6,8 @@ console.log("Verify Wasm 演示");
 
 
 let op: http.RequestOptions = {
-    host: "18.167.90.229",
+    host: "18.162.245.133",
+    //host: "18.167.90.229",
     //host:"127.0.0.1",
     //host: "18.167.90.229",
     port: 888,
