@@ -155,12 +155,126 @@ namespace host
         //下载证明结果
         public static async Task onGetProve(HttpContext context)
         {
+            Console.WriteLine("onGetProve");
+            byte[] outData;
+            try
+            {
+                //读取url hash，wasm对应的hash
+                var hashWasm = context.Request.Query["hashWasm"].ToString();
+                var hashInput = context.Request.Query["hashInput"].ToString();
+                Console.WriteLine("hashWasm:" + hashWasm);
+                Console.WriteLine("hashInput:" + hashInput);
+                var b = WasmTool.GetSetupState(hashWasm, out var wasm);
+                if (b && wasm.state == ProcessState.Done)
+                {
+                    var b2 = WasmTool.GetProveState(hashWasm, hashInput, out var provestate);
+                    if (b2 && provestate.state == ProcessState.Done)
+                    {
+                        outData = WasmTool.GetProveData(hashWasm, hashInput);
+                        if (outData == null)
+                            outData = BitConverter.GetBytes(-3);
+                    }
+                    else
+                    {
+                        outData = BitConverter.GetBytes(-2);
+                    }
 
+
+                }
+                else
+                {
+                    outData = BitConverter.GetBytes(-1);
+                }
+            }
+            catch (Exception ex)
+            {
+                outData = BitConverter.GetBytes(-100);
+            }
+
+            try
+            {
+                context.Response.StatusCode = 200;
+                context.Response.ContentType = "application/octet-stream";
+                Console.WriteLine("Prove 返回:" + outData.Length);
+                await context.Response.Body.WriteAsync(outData,0,outData.Length);
+                context.Response.Body.Close();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Prove 返回信息失败");
+            }
         }
         //设置证明结果
         public static async Task onSetProve(HttpContext context)
         {
+            Console.WriteLine("onProve");
+            var jsonResult = new JObject();
+            try
+            {
+                //读取url hash，wasm对应的hash
+                var hashWasm = context.Request.Query["hashWasm"].ToString();
+                var hashInput = context.Request.Query["hashInput"].ToString();
+                var len = (int)context.Request.ContentLength;
+                byte[] data = new byte[len];
 
+                var seek = 0;
+                while (seek < len)
+                {
+                    var read = await context.Request.Body.ReadAsync(data, seek, len - seek);
+                    seek += read;
+                }
+
+                //拼一个总的hash
+                var b = WasmTool.GetSetupState(hashWasm, out var wasm);
+                bool skip = false;
+                if (b && wasm.state == ProcessState.Done)
+                {
+                    var b2= WasmTool.GetProveState(hashWasm, hashInput,out var prove);
+                    {
+                        if(b2&& prove.state== ProcessState.Done)
+                        {
+                            jsonResult["code"] = 1;
+                            jsonResult["txt"] = "证明存在，不用上传";
+                            skip = true;
+                        }
+                        if(b2&&prove.state== ProcessState.Doing)
+                        {
+                            jsonResult["code"] = -1;
+                            jsonResult["txt"] = "证明中，不能上传";
+                            skip = true;
+                        }
+                    }
+                   
+                    if(!skip)
+                    {
+                        WasmTool.SetProveData(hashWasm, hashInput, data);
+                        jsonResult["code"] = 1;
+                        jsonResult["txt"] = "证明上传";
+                    }
+                }
+                else
+                {
+                    jsonResult["code"] = -1;
+                    jsonResult["txt"] = "wasm 未Setup:" + hashWasm;
+                }
+            }
+            catch (Exception ex)
+            {
+                jsonResult["code"] = -100;
+                jsonResult["txt"] = "未知错误:" + ex.ToString();
+            }
+
+            try
+            {
+                context.Response.StatusCode = 200;
+                context.Response.ContentType = "text/plain;charset=utf-8";
+                Console.WriteLine("Prove 返回:" + jsonResult.ToString());
+                await context.Response.WriteAsync(jsonResult.ToString());
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Prove 返回信息失败");
+            }
         }
 
         //ZKWASM 验证协议，需要 WASM被Setup，证明被Set 或者 被Prove
@@ -174,7 +288,7 @@ namespace host
                 //读取url hash，wasm对应的hash
                 var hashWasm = context.Request.Query["hashWasm"].ToString();
                 var hashInput = context.Request.Query["hashInput"].ToString();
-                Console.WriteLine("hashWasm:"+ hashWasm);
+                Console.WriteLine("hashWasm:" + hashWasm);
                 Console.WriteLine("hashInput:" + hashInput);
                 var b = WasmTool.GetSetupState(hashWasm, out var wasm);
                 if (b && wasm.state == ProcessState.Done)
@@ -184,7 +298,7 @@ namespace host
                     {
                         var state = await WasmTool.VerifyWasm(hashWasm, hashInput);
                         jsonResult["logs"] = new JArray(state.logs.ToArray());
-                        if(state.state== ProcessState.Done)
+                        if (state.state == ProcessState.Done)
                         {
                             jsonResult["code"] = 1;
                             jsonResult["txt"] = "verify 成功";

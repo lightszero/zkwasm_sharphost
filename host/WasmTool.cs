@@ -72,7 +72,7 @@ namespace host
             var basharg = "-c \"" + exe + " " + args + ">1.txt\"";//直接输出会报错
 
             Console.WriteLine("try execute " + basharg);
-            
+
             var r = await
             CliWrap.Cli.Wrap("/bin/bash")
                 .WithArguments(basharg)
@@ -336,7 +336,54 @@ namespace host
                 return wstate;
             }
         }
+        public static byte[] GetProveData(string hashWasm, string hashInput)
+        {
+            var finalProvedir = System.IO.Path.Combine(g_wasmout, hashWasm + "/" + hashInput);
+            var d1 = System.IO.File.ReadAllBytes(System.IO.Path.Combine(finalProvedir, "root.loadinfo.json"));//配置
+            var d2 = System.IO.File.ReadAllBytes(System.IO.Path.Combine(finalProvedir, "root.0.transcript.data"));//证明数据
+            var d3 = System.IO.File.ReadAllBytes(System.IO.Path.Combine(finalProvedir, "root.0.instance.data"));//pubdata
+            using var ms = new MemoryStream();
+            ms.Write(BitConverter.GetBytes(d1.Length));
+            ms.Write(BitConverter.GetBytes(d2.Length));
+            ms.Write(BitConverter.GetBytes(d3.Length));
+            ms.Write(d1);
+            ms.Write(d2);
+            ms.Write(d3);
+            return ms.ToArray();
+        }
+        public static void SetProveData(string hashWasm, string hashInput, byte[] data)
+        {
+            var finalProvedir = System.IO.Path.Combine(g_wasmout, hashWasm + "/" + hashInput);
+            if(System.IO.Directory.Exists(finalProvedir)==false)
+            {
+                System.IO.Directory.CreateDirectory(finalProvedir);
+            }
+            using var ms = new MemoryStream(data);
+            var buf = new byte[4];
+            ms.Read(buf, 0, 4);
+            int jsonlen =BitConverter.ToInt32(buf, 0);
+            ms.Read(buf, 0, 4);
+            int provelen = BitConverter.ToInt32(buf, 0);
+            ms.Read(buf, 0, 4);
+            int publen = BitConverter.ToInt32(buf, 0);
+            {
+                var datajson = new byte[jsonlen];
+                ms.Read(datajson, 0, jsonlen);
+                System.IO.File.WriteAllBytes(System.IO.Path.Combine(finalProvedir, "root.loadinfo.json"), datajson);
+            }
+            {
+                var datajson = new byte[provelen];
+                ms.Read(datajson, 0, provelen);
+                System.IO.File.WriteAllBytes(System.IO.Path.Combine(finalProvedir, "root.0.transcript.data"), datajson);
+            }
+            {
+                var datajson = new byte[publen];
+                ms.Read(datajson, 0, publen);
+                System.IO.File.WriteAllBytes(System.IO.Path.Combine(finalProvedir, "root.0.instance.data"), datajson);
+            }
+            System.IO.File.WriteAllText(System.IO.Path.Combine(finalProvedir, ".state"), "FORCEDONE.\n");
 
+        }
         public static async Task<ProcessInfo> VerifyWasm(string hashWasm, string hashInput)
         {
             ProcessInfo wstate = new ProcessInfo();
@@ -348,9 +395,9 @@ namespace host
             string verify = $" --params {finalparamdir} root  verify --output {finalProvedir}";
 
             await RunCmd(g_wasmpath, g_wasmbin, verify, wstate.logs);
-            foreach(var l in wstate.logs)
+            foreach (var l in wstate.logs)
             {
-                if(l.IndexOf("Verification succeeded!")==0)
+                if (l.IndexOf("Verification succeeded!") == 0)
                 {
                     wstate.state = ProcessState.Done;
                     break;
