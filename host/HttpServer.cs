@@ -196,7 +196,7 @@ namespace host
                 context.Response.StatusCode = 200;
                 context.Response.ContentType = "application/octet-stream";
                 Console.WriteLine("Prove 返回:" + outData.Length);
-                await context.Response.Body.WriteAsync(outData,0,outData.Length);
+                await context.Response.Body.WriteAsync(outData, 0, outData.Length);
                 context.Response.Body.Close();
             }
             catch (Exception ex)
@@ -229,23 +229,23 @@ namespace host
                 bool skip = false;
                 if (b && wasm.state == ProcessState.Done)
                 {
-                    var b2= WasmTool.GetProveState(hashWasm, hashInput,out var prove);
+                    var b2 = WasmTool.GetProveState(hashWasm, hashInput, out var prove);
                     {
-                        if(b2&& prove.state== ProcessState.Done)
+                        if (b2 && prove.state == ProcessState.Done)
                         {
                             jsonResult["code"] = 1;
                             jsonResult["txt"] = "证明存在，不用上传";
                             skip = true;
                         }
-                        if(b2&&prove.state== ProcessState.Doing)
+                        if (b2 && prove.state == ProcessState.Doing)
                         {
                             jsonResult["code"] = -1;
                             jsonResult["txt"] = "证明中，不能上传";
                             skip = true;
                         }
                     }
-                   
-                    if(!skip)
+
+                    if (!skip)
                     {
                         WasmTool.SetProveData(hashWasm, hashInput, data);
                         jsonResult["code"] = 1;
@@ -342,5 +342,101 @@ namespace host
                 Console.WriteLine("Prove 返回信息失败");
             }
         }
+
+        public static async Task onSetupLogic(HttpContext context)
+        {
+            Console.WriteLine("onSetupLogic");
+            var jsonResult = new JObject();
+            try
+            {
+                var len = (int)context.Request.ContentLength;
+                byte[] data = new byte[len];
+                var seek = 0;
+                while (seek < len)
+                {
+                    var read = await context.Request.Body.ReadAsync(data, seek, len - seek);
+                    seek += read;
+                }
+                var hashstr = HashTool.CalcHashStr(data) + "_" + data.Length;
+
+                jsonResult["hash"] = hashstr;
+                WasmLogicTool.SetupWasm(hashstr, data);
+                jsonResult["code"] = 1;
+            }
+            catch (Exception ex)
+            {
+                jsonResult["code"] = -100;
+                jsonResult["txt"] = "未知错误:" + ex.ToString();
+            }
+
+
+            try
+            {
+                context.Response.StatusCode = 200;
+                context.Response.ContentType = "text/plain;charset=utf-8";
+                Console.WriteLine("Setup 返回:" + jsonResult.ToString());
+                await context.Response.WriteAsync(jsonResult.ToString());
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Setup 返回信息失败");
+            }
+        }
+        public static async Task onExecuteLogic(HttpContext context)
+        {
+            Console.WriteLine("onExecuteLogic");
+            var jsonResult = new JObject();
+            byte[] result = null;
+            try
+            {
+                var len = (int)context.Request.ContentLength;
+                byte[] input = new byte[len];
+                var seek = 0;
+                while (seek < len)
+                {
+                    var read = await context.Request.Body.ReadAsync(input, seek, len - seek);
+                    seek += read;
+                }
+                var hashstr = context.Request.Query["hash"];
+                long[] inputvalues;
+
+                {//读取Input并拆开
+                    using var ms = new MemoryStream(input);
+                    long vpri = WasmTool.ReadI64Big(ms);
+                    inputvalues = new long[vpri + 1];
+                    inputvalues[0] = vpri;
+                    for (var i = 0; i < vpri; i++)
+                    {
+                        inputvalues[i + 1] = WasmTool.ReadI64Big(ms);
+                    }
+                }
+
+                var module = WasmLogicTool.GetWasmModule(hashstr);
+                var output = WasmLogicTool.RunWasm(module, inputvalues);
+                result = WasmTool.I64BigArrayToBytes(output);
+                if (result == null)
+                    result = BitConverter.GetBytes(-3);
+
+            }
+            catch (Exception ex)
+            {
+                result = BitConverter.GetBytes(-100);
+            }
+
+
+            try
+            {
+                context.Response.StatusCode = 200;
+                context.Response.ContentType = "application/octet-stream";
+                Console.WriteLine("Prove 返回:" + result.Length);
+                await context.Response.Body.WriteAsync(result, 0, result.Length);
+                context.Response.Body.Close();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Setup 返回信息失败");
+            }
+        }
+
     }
 }

@@ -19,7 +19,9 @@ namespace host
                 info["zkwasm"]["zkwasmbin"].ToString(),
                 info["zkwasm"]["zkwasm_wasmpath"].ToString()
                 );
-
+            WasmLogicTool.Init(
+                info["logicwasm"]["savepath"].ToString()
+                );
             light.http.server.httpserver serv = new light.http.server.httpserver();
             serv.SetFailAction(on404);
             serv.SetJsonRPCFail("/zkwasm", onRPCFail);
@@ -28,6 +30,8 @@ namespace host
             serv.SetHttpAction("/getProveData", HttpServer.onGetProve);
             serv.SetHttpAction("/setProveData", HttpServer.onSetProve);
             serv.SetHttpAction("/verify", HttpServer.onVerify);
+            serv.SetHttpAction("/setupLogic", HttpServer.onSetupLogic);
+            serv.SetHttpAction("/executeLogic", HttpServer.onExecuteLogic);
             serv.Start(port);
             while (true)
             {

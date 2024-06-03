@@ -4,6 +4,8 @@
     "zkwasmbin": "./zkwasm-cli",
     "zkwasm_wasmpath": "/home/lights/zkwasmsrc"
   },
-  
+  "logicwasm": {
+    "savepath": "/home/lights/logicwasm"
+  },
   "port": 888
 }

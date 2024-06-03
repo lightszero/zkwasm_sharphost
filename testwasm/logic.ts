@@ -7,7 +7,7 @@ declare function wasm_input(x: i32): i64
 @external("env", "wasm_output")
 declare function wasm_output(v: i64): void
 
-export function gamemain(): void {
+export function logicmain(): void {
     //read input
     var count = wasm_input(0);
     var arr: i64[] = [];

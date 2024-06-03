@@ -231,7 +231,7 @@ namespace host
         }
         static byte[] buf = new byte[8];
         static byte[] buf2 = new byte[8];
-        static long ReadI64Big(System.IO.Stream stream)
+        public static long ReadI64Big(System.IO.Stream stream)
         {
             stream.Read(buf, 0, 8);
             if (BitConverter.IsLittleEndian)
@@ -246,6 +246,32 @@ namespace host
             {
                 return BitConverter.ToInt64(buf, 0);
             }
+        }
+        public static void WriteI64Big(System.IO.Stream stream, long v)
+        {
+            var data = BitConverter.GetBytes(v);
+            
+            if (BitConverter.IsLittleEndian)
+            {
+                for (var i = 0; i < 8; i++)
+                {
+                    buf2[7 - i] = data[i];
+                }
+                stream.Write(buf2, 0, buf2.Length); 
+            }
+            else
+            {
+                stream.Write(data, 0, buf2.Length);
+            }
+        }
+        public static byte[] I64BigArrayToBytes(long[] output)
+        {
+            using var ms = new MemoryStream();
+            for (var i = 0; i < output.Length; i++)
+            {
+                WriteI64Big(ms, output[i]);
+            }
+            return ms.ToArray();
         }
         static ulong ReadU64Big(System.IO.Stream stream)
         {

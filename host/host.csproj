@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <PackageReference Include="CliWrap" Version="3.6.6" />
+    <PackageReference Include="Wasmtime" Version="19.0.1" />
   </ItemGroup>
 
   <ItemGroup>
