@@ -106,7 +106,7 @@ namespace host
             var run = inst.GetAction("logicmain");
             if (run == null)
             {
-                throw new Exception("Need a function void gamemain()");
+                throw new Exception("Need a function void logicmain()");
             }
             run();
 

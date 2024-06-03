@@ -420,6 +420,7 @@ namespace host
             }
             catch (Exception ex)
             {
+                Console.WriteLine(ex.ToString());
                 result = BitConverter.GetBytes(-100);
             }
 
@@ -428,13 +429,13 @@ namespace host
             {
                 context.Response.StatusCode = 200;
                 context.Response.ContentType = "application/octet-stream";
-                Console.WriteLine("Prove 返回:" + result.Length);
+                Console.WriteLine("onExecuteLogic 返回:" + result.Length);
                 await context.Response.Body.WriteAsync(result, 0, result.Length);
                 context.Response.Body.Close();
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Setup 返回信息失败");
+                Console.WriteLine("onExecuteLogic 返回信息失败");
             }
         }
 
