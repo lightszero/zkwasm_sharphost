@@ -250,14 +250,14 @@ namespace host
         public static void WriteI64Big(System.IO.Stream stream, long v)
         {
             var data = BitConverter.GetBytes(v);
-            
+
             if (BitConverter.IsLittleEndian)
             {
                 for (var i = 0; i < 8; i++)
                 {
                     buf2[7 - i] = data[i];
                 }
-                stream.Write(buf2, 0, buf2.Length); 
+                stream.Write(buf2, 0, buf2.Length);
             }
             else
             {
@@ -287,6 +287,22 @@ namespace host
             else
             {
                 return BitConverter.ToUInt64(buf, 0);
+            }
+        }
+        static string FormatI64(long num)
+        {
+            if (num < 0)
+            {
+                var dat = BitConverter.GetBytes(num);
+                var outstr = "0x";
+                for (var i = 0; i < 8; i++)
+                    outstr += dat[i].ToString("x02");
+                outstr += "bytes-packed";
+                return outstr;
+            }
+            else
+            {
+                return num + ":i64";
             }
         }
         public static async Task<ProcessInfo> ProveWasm(string hashWasm, string hashInput, byte[] data)
@@ -341,16 +357,16 @@ namespace host
                 string pubvalues = "";
                 {//读取Input并拆开
                     long vpri = ReadI64Big(ms);
-                    privalues += vpri + ":i64";
+                    privalues += FormatI64(vpri);
                     for (var i = 0; i < vpri; i++)
                     {
-                        privalues += "," + ReadI64Big(ms) + ":i64";
+                        privalues += "," + FormatI64(ReadI64Big(ms));
                     }
                     long vpub = ReadI64Big(ms);
-                    pubvalues += vpub + ":i64";
+                    pubvalues += FormatI64(vpub);
                     for (var i = 0; i < vpub; i++)
                     {
-                        pubvalues += "," + ReadI64Big(ms) + ":i64";
+                        pubvalues += "," + FormatI64(ReadI64Big(ms));
                     }
                 }
 
