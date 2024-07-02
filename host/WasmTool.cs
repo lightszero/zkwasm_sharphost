@@ -297,7 +297,7 @@ namespace host
                 var outstr = "0x";
                 for (var i = 0; i < 8; i++)
                     outstr += dat[i].ToString("x02");
-                outstr += "bytes-packed";
+                outstr += ":bytes-packed";
                 return outstr;
             }
             else
