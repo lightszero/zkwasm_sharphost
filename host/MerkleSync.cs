@@ -17,7 +17,7 @@ namespace host
             var b3 = BitConverter.GetBytes(arr[2]);
             var b4 = BitConverter.GetBytes(arr[3]);
             byte[] hash = new byte[32];
-            for (var i = 0; i < 32; i++)
+            for (var i = 0; i < 8; i++)
             {
                 hash[0 + i] = b1[i];
                 hash[8 + i] = b2[i];
@@ -33,7 +33,7 @@ namespace host
             var b3 = BitConverter.GetBytes(arr[2]);
             var b4 = BitConverter.GetBytes(arr[3]);
             byte[] hash = new byte[32];
-            for (var i = 0; i < 32; i++)
+            for (var i = 0; i < 8; i++)
             {
                 hash[0 + i] = b1[i];
                 hash[8 + i] = b2[i];

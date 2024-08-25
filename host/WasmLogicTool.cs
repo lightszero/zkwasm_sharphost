@@ -98,7 +98,7 @@ namespace host
             };
             linker.Define("env", "wasm_input", Wasmtime.Function.FromCallback(store, wasm_input));
             linker.Define("env", "wasm_output", Wasmtime.Function.FromCallback(store, wasm_output));
-
+            LinkMerkleFunc(linker, store);
             LinkCacheFunc(linker, store);
 
             var inst = linker.Instantiate(store, module);
@@ -137,26 +137,26 @@ namespace host
             int _hashseek = 0;
             //update操作 merkle_address=>merkle_setroot*4=>merkle_set*4=>merkle_getroot*4
             //get操作    merkle_address=>merkle_setroot*4=>merkle_get*4=>merkle_getroot*4(虽然没有意义，但还是操作一下)
-            Wasmtime.CallerAction<UInt64> merkle_address = (caller, i) =>
+            Wasmtime.CallerAction<Int64> merkle_address = (caller, i) =>
             {
-                address = i;
+                address = (ulong)i;
                 _rootseek = 0;
                 _hashseek = 0;
             };
-            Wasmtime.CallerAction<UInt64> merkle_setroot = (caller, i) => //pub fn merkle_setroot(x: u64);
+            Wasmtime.CallerAction<Int64> merkle_setroot = (caller, i) => //pub fn merkle_setroot(x: u64);
             {
-                _root[_rootseek] = i;
+                _root[_rootseek] = (ulong)i;
                 _rootseek++;
             };
-            Wasmtime.CallerFunc<UInt64> merkle_getroot = (caller) => //pub fn merkle_getroot()->u64;
+            Wasmtime.CallerFunc<Int64> merkle_getroot = (caller) => //pub fn merkle_getroot()->u64;
             {
                 var r = _root[_rootseek];
                 _rootseek++;
-                return r;
+                return (long)r;
             };
-            Wasmtime.CallerAction<UInt64> merkle_set = (caller, i) => //pub fn merkle_setroot(x: u64);
+            Wasmtime.CallerAction<Int64> merkle_set = (caller, i) => //pub fn merkle_setroot(x: u64);
             {
-                _hash[_hashseek] = i;
+                _hash[_hashseek] = (ulong)i;
                 _hashseek++;
                 if(_hashseek == 4)
                 {
@@ -170,7 +170,7 @@ namespace host
                     }
                 }
             };
-            Wasmtime.CallerFunc<UInt64> merkle_get = (caller) => //pub fn merkle_getroot()->u64;
+            Wasmtime.CallerFunc<Int64> merkle_get = (caller) => //pub fn merkle_getroot()->u64;
             {
                 if(_hashseek==0)
                 {
@@ -184,7 +184,7 @@ namespace host
                 }
                 var r = _hash[_hashseek];
                 _hashseek++;
-                return r;
+                return (long)r;
             };
             linker.Define("env", "merkle_address", Wasmtime.Function.FromCallback(store, merkle_address));
             linker.Define("env", "merkle_setroot", Wasmtime.Function.FromCallback(store, merkle_setroot));
@@ -203,16 +203,16 @@ namespace host
             int cache_dataseek = -1;
             //store mode, cache_set_mode(1)=>cache_store_data*N=>cache_set_hash*4
             //fetch mode, cache_set_mode(0)=>cache_set_hash*4=>cache_fetch_data len =>cache_fetch_data*N
-            Wasmtime.CallerAction<UInt64> cache_set_mode = (caller, i) =>
+            Wasmtime.CallerAction<Int64> cache_set_mode = (caller, i) =>
             {
                 cache_mode = (int)i;
                 cache_hashseek = 0;
                 cache_data.Clear();
                 cache_dataseek = -1;
             };
-            Wasmtime.CallerAction<UInt64> cache_set_hash = (caller, i) =>
+            Wasmtime.CallerAction<Int64> cache_set_hash = (caller, i) =>
             {
-                cache_hash[cache_hashseek] = i;
+                cache_hash[cache_hashseek] = (ulong)i;
                 cache_hashseek++;
                 if (cache_hashseek == 4)
                 {
@@ -230,23 +230,23 @@ namespace host
                     }
                 }
             };
-            Wasmtime.CallerAction<UInt64> cache_store_data = (caller, i) =>
+            Wasmtime.CallerAction<Int64> cache_store_data = (caller, i) =>
             {
-                cache_data.Add(i);
+                cache_data.Add((ulong)i);
             };
-            Wasmtime.CallerFunc<UInt64> cache_fetch_data = (caller) =>
+            Wasmtime.CallerFunc<Int64> cache_fetch_data = (caller) =>
             {
                 if (cache_dataseek == -1)
                 {
                     var len = (ulong)cache_data.Count;
                     cache_dataseek++;
-                    return len;
+                    return (long)len;
                 }
                 else
                 {
                     var data = cache_data[cache_dataseek];
                     cache_dataseek++;
-                    return data;
+                    return (long)data;
                 }
             };
             linker.Define("env", "cache_set_mode", Wasmtime.Function.FromCallback(store, cache_set_mode));
