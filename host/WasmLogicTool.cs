@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using Wasmtime;
@@ -100,7 +101,7 @@ namespace host
             linker.Define("env", "wasm_output", Wasmtime.Function.FromCallback(store, wasm_output));
             LinkMerkleFunc(linker, store);
             LinkCacheFunc(linker, store);
-
+            LinkposeidonFunc(linker, store);
             var inst = linker.Instantiate(store, module);
             var funcs = inst.GetFunctions();
             foreach (var f in funcs)
@@ -158,13 +159,13 @@ namespace host
             {
                 _hash[_hashseek] = (ulong)i;
                 _hashseek++;
-                if(_hashseek == 4)
+                if (_hashseek == 4)
                 {
                     //保存merkleHash
                     var newroot = MerkleSync.update_leaf(_root, address, _hash);
                     _rootseek = 0;
                     //_root = 新的默克尔根
-                    for(var _i=0;_i<4;_i++)
+                    for (var _i = 0; _i < 4; _i++)
                     {
                         _root[_i] = newroot[_i];
                     }
@@ -172,7 +173,7 @@ namespace host
             };
             Wasmtime.CallerFunc<Int64> merkle_get = (caller) => //pub fn merkle_getroot()->u64;
             {
-                if(_hashseek==0)
+                if (_hashseek == 0)
                 {
                     //从数据库读取MerkleHash
                     var hash = MerkleSync.get_leaf(_root, address);
@@ -226,7 +227,7 @@ namespace host
                     {
                         //fetch
                         //根据hash,把数据找出来，放到cache_data
-                        MerkleSync.get_record(cache_hash,cache_data);
+                        MerkleSync.get_record(cache_hash, cache_data);
                     }
                 }
             };
@@ -253,6 +254,45 @@ namespace host
             linker.Define("env", "cache_set_hash", Wasmtime.Function.FromCallback(store, cache_set_hash));
             linker.Define("env", "cache_store_data", Wasmtime.Function.FromCallback(store, cache_store_data));
             linker.Define("env", "cache_fetch_data", Wasmtime.Function.FromCallback(store, cache_fetch_data));
+        }
+
+        [ThreadStatic]
+        static SHA256 fake_poseidon;
+        private static void LinkposeidonFunc(Linker linker, Store store)
+        {
+            //pub fn poseidon_new(x: u64);
+            //pub fn poseidon_push(x: u64);
+            //pub fn poseidon_finalize()->u64;
+            //先搞个假的
+
+            if (fake_poseidon == null)
+                fake_poseidon = SHA256.Create();
+            byte[] hash = new byte[32];
+            int seek_hash = 0;
+            Wasmtime.CallerAction<Int64> poseidon_new = (caller, i) =>
+            {
+
+                seek_hash = 0;
+                fake_poseidon.Initialize();
+                var data = BitConverter.GetBytes((ulong)i);
+                fake_poseidon.TransformBlock(data, 0, 8, hash, 0);
+            };
+            Wasmtime.CallerAction<Int64> poseidon_push = (caller, i) =>
+            {
+                var data = BitConverter.GetBytes((ulong)i);
+                fake_poseidon.TransformBlock(data, 0, 8, hash, 0);
+            };
+            Wasmtime.CallerFunc<Int64> poseidon_finalize = (caller) =>
+            {
+                var r = BitConverter.ToUInt64(hash, seek_hash * 8);
+              
+                seek_hash++;
+
+                return (long)r;
+            };
+            linker.Define("env", "poseidon_new", Wasmtime.Function.FromCallback(store, poseidon_new));
+            linker.Define("env", "poseidon_push", Wasmtime.Function.FromCallback(store, poseidon_push));
+            linker.Define("env", "poseidon_finalize", Wasmtime.Function.FromCallback(store, poseidon_finalize));
         }
     }
 }

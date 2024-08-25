@@ -2,7 +2,7 @@
 
 import * as cache from "./cache";   
 import * as merkle from "./merkle";
-
+import * as boseidon from "./boseidon";
 
 export function logic(input: u64[]): u64[] {
 
