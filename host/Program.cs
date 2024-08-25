@@ -22,6 +22,8 @@ namespace host
             WasmLogicTool.Init(
                 info["logicwasm"]["savepath"].ToString()
                 );
+            MerkleDBHelper.uri = new Uri(info["merkledb_uri"].ToString());
+            Console.WriteLine("MerkleDBHelper.uri=" + MerkleDBHelper.uri);
             light.http.server.httpserver serv = new light.http.server.httpserver();
             serv.SetFailAction(on404);
             serv.SetJsonRPCFail("/zkwasm", onRPCFail);

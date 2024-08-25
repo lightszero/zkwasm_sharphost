@@ -7,5 +7,6 @@
   "logicwasm": {
     "savepath": "/home/lights/logicwasm"
   },
-  "port": 888
+  "port": 888,
+  "merkledb_uri": "http://18.162.245.133:999/"
 }

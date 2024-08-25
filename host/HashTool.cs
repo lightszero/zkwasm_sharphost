@@ -23,15 +23,24 @@ namespace host
         public static string CalcHashStr(byte[] data)
         {
             var hash =CalcHash(data);
-            return ToHexStr(hash);
+            return Hex2Str(hash);
         }
-        public static string ToHexStr(byte[] data)
+        public static string Hex2Str(byte[] data)
         {
             var str = "";
             for(var i=0;i<data.Length; i++) {
                 str += data[i].ToString("X02");
             }
             return str;
+        }
+        public static byte[] Str2Hex(string str)
+        {
+            var data = new byte[str.Length / 2];
+            for (var i = 0; i < data.Length; i++)
+            {
+                data[i] = byte.Parse(str.Substring(i * 2, 2), System.Globalization.NumberStyles.HexNumber);
+            }
+            return data;
         }
     }
 }
