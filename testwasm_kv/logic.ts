@@ -1,5 +1,6 @@
 import * as buzz1 from "./buzz1"
 
+
 @external("env", "wasm_input")
 declare function wasm_input(x: i32): u64
 
@@ -18,6 +19,7 @@ export function logicmain(): void {
 
     //do game
     var arroutput = buzz1.logic(arr);
+
 
     //set output
     wasm_output(arroutput.length);

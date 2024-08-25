@@ -49,12 +49,11 @@ var buf = tarr;//fs.readFileSync(".bin/input.test");
 console.log("filelen = " + buf.byteLength);
 
 let op: http.RequestOptions = {
-    //host: "18.162.245.133",
+    host: "18.162.245.133",
     //host: "18.167.90.229",
-    host: "127.0.0.1",
-    //host: "18.167.90.229",
+    //host: "127.0.0.1",
     port: 888,
-    path: "/executeLogic?hash=E38C20BF275F452ABCFBE01EC5DFA846846814CCD089F4F5ECD261E05399A37D_3635",
+    path: "/executeLogic?hash=CB6E5E442FB8F4AC6A41205025FFFFDC59F0ED375EBD333753FD1AA4F827E5E0_4221",
     method: "post",
     headers: {
         'Content-Type': 'application/octet-stream',
@@ -99,12 +98,12 @@ function OnServerReturn(data: string) {
         console.log("--服务器异常-- = " + len);
         return;
     }
-    var resultlen =dv.getBigInt64(0,false);
+    var resultlen =dv.getBigUint64(0,false);
     console.log("resultlen="+resultlen);
-    var seek =0;
+    var seek =8;
     for(var i=0;i<resultlen;i++)
         {
-            var v = dv.getBigInt64(seek,false);
+            var v = dv.getBigUint64(seek,false);
             seek+=8;
             console.log("result["+i+"]="+v);
         }
