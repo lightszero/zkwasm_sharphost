@@ -35,6 +35,10 @@ namespace host
             serv.SetHttpAction("/setupLogic", HttpServer.onSetupLogic);
             serv.SetHttpAction("/executeLogic", HttpServer.onExecuteLogic);
             serv.Start(port);
+
+            //test poseidon
+            Poseidon.poseidon_new(1);
+
             while (true)
             {
                 Console.ReadLine();

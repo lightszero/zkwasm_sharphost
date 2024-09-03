@@ -1,0 +1,15 @@
+[package]
+name = "lib_poseidon"
+authors = ["DelphinusLab <xgao@zoyoe.com>"]
+version = "0.1.0"
+edition = "2021"
+
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+bytes-helper= { git = "https://github.com/xgaozoyoe/bytes-reducer.git" }
+halo2curves = { git = "https://github.com/xgaozoyoe/halo2curves.git" }
+poseidon = { git = "https://github.com/DelphinusLab/poseidon", branch="no-std" }
+lazy_static = "1.4.0"

@@ -101,7 +101,7 @@ namespace host
             linker.Define("env", "wasm_output", Wasmtime.Function.FromCallback(store, wasm_output));
             LinkMerkleFunc(linker, store);
             LinkCacheFunc(linker, store);
-            LinkposeidonFunc(linker, store);
+            LinkPoseidonFunc(linker, store);
             var inst = linker.Instantiate(store, module);
             var funcs = inst.GetFunctions();
             foreach (var f in funcs)
@@ -258,7 +258,7 @@ namespace host
 
         [ThreadStatic]
         static SHA256 fake_poseidon;
-        private static void LinkposeidonFunc(Linker linker, Store store)
+        private static void LinkPoseidonFunc(Linker linker, Store store)
         {
             //pub fn poseidon_new(x: u64);
             //pub fn poseidon_push(x: u64);
