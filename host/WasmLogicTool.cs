@@ -256,39 +256,24 @@ namespace host
             linker.Define("env", "cache_fetch_data", Wasmtime.Function.FromCallback(store, cache_fetch_data));
         }
 
-        [ThreadStatic]
-        static SHA256 fake_poseidon;
         private static void LinkPoseidonFunc(Linker linker, Store store)
         {
             //pub fn poseidon_new(x: u64);
             //pub fn poseidon_push(x: u64);
             //pub fn poseidon_finalize()->u64;
-            //先搞个假的
 
-            if (fake_poseidon == null)
-                fake_poseidon = SHA256.Create();
-            byte[] hash = new byte[32];
-            int seek_hash = 0;
+
             Wasmtime.CallerAction<Int64> poseidon_new = (caller, i) =>
             {
-
-                seek_hash = 0;
-                fake_poseidon.Initialize();
-                var data = BitConverter.GetBytes((ulong)i);
-                fake_poseidon.TransformBlock(data, 0, 8, hash, 0);
+                Poseidon.poseidon_new((ulong)i);
             };
             Wasmtime.CallerAction<Int64> poseidon_push = (caller, i) =>
             {
-                var data = BitConverter.GetBytes((ulong)i);
-                fake_poseidon.TransformBlock(data, 0, 8, hash, 0);
+                Poseidon.poseidon_push((ulong)i);
             };
             Wasmtime.CallerFunc<Int64> poseidon_finalize = (caller) =>
             {
-                var r = BitConverter.ToUInt64(hash, seek_hash * 8);
-              
-                seek_hash++;
-
-                return (long)r;
+                return (long)Poseidon.poseidon_finalize();
             };
             linker.Define("env", "poseidon_new", Wasmtime.Function.FromCallback(store, poseidon_new));
             linker.Define("env", "poseidon_push", Wasmtime.Function.FromCallback(store, poseidon_push));
