@@ -26,8 +26,8 @@ namespace host
             else if (Environment.OSVersion.Platform == PlatformID.Unix)
             {
                 var path = AppDomain.CurrentDomain.BaseDirectory;
-                var srcpath = System.IO.Path.Combine(path, "poseidon/linux_x64/lib_poseidon.so");
-                var destpath = System.IO.Path.Combine(path, "lib_poseidon.so");
+                var srcpath = System.IO.Path.Combine(path, "poseidon/linux_x64/liblib_poseidon.so");
+                var destpath = System.IO.Path.Combine(path, "liblib_poseidon.so");
                 System.IO.File.Copy(srcpath, destpath, true);
             }
         }
