@@ -159,8 +159,7 @@ export class Merkle {
     }
 
     get(index: u32, pad: bool): CacheData {
-        let hash: u64[] = [];
-        hash.length = 4;
+        let hash: u64[] = [0,0,0,0];
         this.get_simple(index, hash);
 
         let data = Cache.get_data(hash);

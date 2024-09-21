@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json.Linq;
 using System;
+using System.Net;
 using System.Reflection;
 using static System.Net.WebRequestMethods;
 
@@ -166,12 +167,16 @@ namespace host
             return (ulong)(((long)2 << (depth)) - 2);
         }
         public static Uri uri = new Uri("http://18.162.245.133:999/");
-        public static async Task<MerkleRoot> update_leaf(MerkleRoot root, ulong index, Hash hash)
+        const int MERKLE_TREE_HEIGHT = 32;
+        public static async Task<MerkleRoot> update_leaf(MerkleRoot root, ulong address, Hash hash)
         {
             HttpClient http = new HttpClient();
             var req = new JObject();
             req["root"] = root.ToJson();
             req["data"] = hash.ToJson();
+
+            var index = (address ) + (1ul << MERKLE_TREE_HEIGHT) -1;
+
             req["index"] = index.ToString();
 
             var jsonrpc = new JObject();
@@ -182,7 +187,7 @@ namespace host
             var upstr = jsonrpc.ToString();
 
             HttpContent content = new StringContent(upstr);
-            var res = await http.PostAsync(new Uri("http://18.162.245.133:999/"), content);
+            var res = await http.PostAsync(uri, content);
             var txt = await res.Content.ReadAsStringAsync();
             JArray result = JObject.Parse(txt)["result"] as JArray;
             if (result == null)
@@ -190,11 +195,14 @@ namespace host
             var rootResult = MerkleRoot.FromJson(result);
             return rootResult;
         }
-        public static async Task<Hash> get_leaf(MerkleRoot root, ulong index)
+        public static async Task<Hash> get_leaf(MerkleRoot root, ulong address)
         {
             HttpClient http = new HttpClient();
             var req = new JObject();
             req["root"] = root.ToJson();
+
+            var index = (address) + (1ul << MERKLE_TREE_HEIGHT) - 1;
+
             req["index"] = index.ToString();
 
             var jsonrpc = new JObject();
@@ -205,7 +213,7 @@ namespace host
             var upstr = jsonrpc.ToString();
 
             HttpContent content = new StringContent(upstr);
-            var res = await http.PostAsync(new Uri("http://18.162.245.133:999/"), content);
+            var res = await http.PostAsync(uri, content);
             var txt = await res.Content.ReadAsStringAsync();
             JArray result = JObject.Parse(txt)["result"] as JArray;
             if (result == null)
@@ -230,7 +238,7 @@ namespace host
 
             HttpContent content = new StringContent(upstr);
             
-            var res = await http.PostAsync(new Uri("http://18.162.245.133:999/"), content);
+            var res = await http.PostAsync(uri, content);
             var txt = await res.Content.ReadAsStringAsync();
             JObject result = JObject.Parse(txt);
             if (result.ContainsKey("error"))
@@ -251,7 +259,7 @@ namespace host
             var upstr = jsonrpc.ToString();
 
             HttpContent content = new StringContent(upstr);
-            var res = await http.PostAsync(new Uri("http://18.162.245.133:999/"), content);
+            var res = await http.PostAsync(uri, content);
             var txt = await res.Content.ReadAsStringAsync();
             JArray result = JObject.Parse(txt)["result"] as JArray;
             if (result == null)
