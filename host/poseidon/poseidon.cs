@@ -23,7 +23,7 @@ namespace host
                 var destpath = System.IO.Path.Combine(path, "lib_poseidon.dll");
                 System.IO.File.Copy(srcpath, destpath, true);
             }
-            else if (Environment.OSVersion.Platform == PlatformID.Unix)
+            else
             {
                 var path = AppDomain.CurrentDomain.BaseDirectory;
                 var srcpath = System.IO.Path.Combine(path, "poseidon/linux_x64/liblib_poseidon.so");
