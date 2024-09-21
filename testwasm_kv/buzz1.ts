@@ -1,17 +1,18 @@
 //buzz2.ts
-
-import * as cache from "./cache";   
-import * as merkle from "./merkle";
-import * as boseidon from "./boseidon";
+  
+import {Cache} from "../zkWasm-AssemblyScript/cache";   
+import {PoseidonHasher} from "../zkWasm-AssemblyScript/poseidon";
+import {Merkle} from "../zkWasm-AssemblyScript/merkle";
+import {KeyValueMap_SMT,KeyValueMap_SMTU64} from "../zkWasm-AssemblyScript/kvpair";
 
 export function logic(input: u64[]): u64[] {
 
     
     var hash:u64[]=[1,2,3,4];
     var data:u64[]=[1,2,3,4,5,6]; 
-    cache.store_data(hash,data);
+    Cache.store_data(hash,data);
 
-    var data2 = cache.get_data(hash);
+    var data2 = Cache.get_data(hash);
 
 
 
@@ -23,8 +24,9 @@ export function logic(input: u64[]): u64[] {
         10309858136294505219,
         2839580074036780766,
     ];
-    let root2 = merkle.store_hash(root1,0x100000002,hash);
-
+    let merkle = Merkle.load(root1);
+    merkle.smt_set_local([0x100000002,0,0,0],u32(0),hash);
+    let root2 = merkle.root;
 
     var output: u64[] = []
     output.push(100);

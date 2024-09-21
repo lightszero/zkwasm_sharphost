@@ -18,7 +18,7 @@ export class PoseidonHasher {
         if (padding) {
             let group = data.length / 3;
             let j = 0;
-            for (var i = 0; i < group; i++) {
+            for (let i = 0; i < group; i++) {
                 j = i * 3;
                 hasher.update(data[j]);
                 hasher.update(data[j + 1]);
@@ -30,7 +30,7 @@ export class PoseidonHasher {
                 hasher.update(data[i]);
             }
         } else {
-            for (var i = 0; i < data.length; i++) {
+            for (let i = 0; i < data.length; i++) {
                 hasher.update(data[i]);
             }
         }
@@ -73,7 +73,7 @@ export class PoseidonHasher {
         poseidon_push(1);
 
         this.value0 += 1;
-        for (var i = this.value0; i < 32; i++) {
+        for (var i2 = this.value0; i2 < 32; i2++) {
             poseidon_push(0);
             this.value0 += 1;
             poseidon_push(0);
