@@ -439,5 +439,102 @@ namespace host
             }
         }
 
+        public static async Task onUpdateRecord(HttpContext context)
+        {
+            Console.WriteLine("onUpdateRecord");
+            var jsonResult = new JObject();
+            try
+            {
+                var len = (int)context.Request.ContentLength;
+                byte[] data = new byte[len];
+                var seek = 0;
+                while (seek < len)
+                {
+                    var read = await context.Request.Body.ReadAsync(data, seek, len - seek);
+                    seek += read;
+                }
+                var hashstr = context.Request.Query["hash"].ToString();
+
+
+                Hash hash = new Hash();
+                for (var i = 0; i < 32; i++)
+                {
+                    hash.data[i] = byte.Parse(hashstr.Substring(i * 2, 2), System.Globalization.NumberStyles.HexNumber);
+                }
+
+
+                jsonResult["hash"] = hashstr;
+                var b = await MerkleDBHelper.update_record(hash, new Data(data));
+                jsonResult["succ"] = b;
+                jsonResult["code"] = 1;
+            }
+            catch (Exception ex)
+            {
+                jsonResult["code"] = -100;
+                jsonResult["txt"] = "未知错误:" + ex.ToString();
+            }
+
+
+            try
+            {
+                context.Response.StatusCode = 200;
+                context.Response.ContentType = "text/plain;charset=utf-8";
+                Console.WriteLine("onUpdateRecord 返回:" + jsonResult.ToString());
+                await context.Response.WriteAsync(jsonResult.ToString());
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("onUpdateRecord 返回信息失败");
+            }
+        }
+        public static async Task onGetRecord(HttpContext context)
+        {
+            Console.WriteLine("onGetRecord");
+            var jsonResult = new JObject();
+            byte[] result = null;
+            try
+            {
+                var len = (int)context.Request.ContentLength;
+                byte[] input = new byte[len];
+                var seek = 0;
+                while (seek < len)
+                {
+                    var read = await context.Request.Body.ReadAsync(input, seek, len - seek);
+                    seek += read;
+                }
+                var hashstr = context.Request.Query["hash"].ToString();
+                Hash hash = new Hash();
+                for (var i = 0; i < 32; i++)
+                {
+                    hash.data[i] = byte.Parse(hashstr.Substring(i * 2, 2), System.Globalization.NumberStyles.HexNumber);
+                }
+
+                var data = await MerkleDBHelper.get_record(hash);
+                result = data.data;
+
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+                result = BitConverter.GetBytes(-100);
+            }
+
+
+            try
+            {
+                context.Response.StatusCode = 200;
+                context.Response.ContentType = "application/octet-stream";
+                Console.WriteLine("onGetRecord 返回:" + result.Length);
+                await context.Response.Body.WriteAsync(result, 0, result.Length);
+                context.Response.Body.Close();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("onGetRecord 返回信息失败");
+            }
+        }
     }
+
+
+
 }

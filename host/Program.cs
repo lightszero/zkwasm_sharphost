@@ -34,6 +34,10 @@ namespace host
             serv.SetHttpAction("/verify", HttpServer.onVerify);
             serv.SetHttpAction("/setupLogic", HttpServer.onSetupLogic);
             serv.SetHttpAction("/executeLogic", HttpServer.onExecuteLogic);
+
+            //提供一个直接入库的办法，用特殊hash 来保存 merkleRoot
+            serv.SetHttpAction("/getRecord", HttpServer.onGetRecord);
+            serv.SetHttpAction("/updateRecord", HttpServer.onUpdateRecord);
             serv.Start(port);
 
             //test poseidon
