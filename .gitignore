@@ -6,3 +6,4 @@ temp
 node_modules
 /host/1.txt
 /librust.poseidon/target
+/zkWasm-AssemblyScript/.temp
