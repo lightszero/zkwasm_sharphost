@@ -57,12 +57,7 @@ class Game {
             let put = message as InputMessage_Put;
             this.DoStep_Put(put);
            
-            this.MerkleTree.smt_set_local([indexMap,0,0,0],0,this.map);
-            
-            let statedata:u64[] =[this.state];
-            this.MerkleTree.smt_set_local([indexState,0,0,0],0,statedata);
-            //这个实现还有点问题
-            //this.MerkleTree.smt_set_local_u64(indexState,0,this.state as u64);
+
         }
     }       
     DoStep_SayHello(message:InputMessage): void {
@@ -78,11 +73,35 @@ class Game {
         {
             throw new Error("游戏已结束");
         }
+        if(v!=this.state)
+        {
+            throw new Error("不是你的回合");
+        }
+        //落子
         this.map[message.y*3+message.x]=message.color;
+
+        //反转颜色
+        if(this.state==  Color.Black)
+        {
+            this.state=Color.White;
+        }
+        else
+        {
+            this.state=Color.Black;
+        }
         if(this.IsEnd())
         {
             print("游戏已结束");
+            this.state= Color.End;
         }
+
+        //更新MerkleTree 数据
+        this.MerkleTree.smt_set_local([indexMap,0,0,0],0,this.map);
+            
+        let statedata:u64[] =[this.state];
+        this.MerkleTree.smt_set_local([indexState,0,0,0],0,statedata);
+        //这个实现还有点问题
+        //this.MerkleTree.smt_set_local_u64(indexState,0,this.state as u64);
     }
     IsEnd():boolean{
         
