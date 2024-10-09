@@ -222,7 +222,7 @@ export class Merkle {
                 }
             } else {
                 // crate::dbg!("smt_get_local is node: continue in sub merkle\n");
-                require((data[0] & 0x1) == TREE_NODE);
+                require((result.data[0] & 0x1) == TREE_NODE);
                 let sub_merkle = Merkle.load(result.data.slice(1, 5));
                 return sub_merkle.smt_get_local(key, path_index + 1)
             }
