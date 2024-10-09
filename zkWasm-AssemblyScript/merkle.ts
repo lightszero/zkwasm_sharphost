@@ -290,10 +290,10 @@ export class Merkle {
 
         this.get_simple(local_index, stored_data);
         // data is stored in little endian
-        let is_leaf = is_leaf(stored_data[3]);
+        let is_leaf = Merkle.is_leaf(stored_data[3]);
         if (is_leaf) {
             // second highest bit indicates the leaf node is empty or not
-            let is_empty = is_empty(stored_data[3]);
+            let is_empty = Merkle.is_empty(stored_data[3]);
             let stored_key = stored_data[0];
             if ((!is_empty) && (key == stored_key)) {
                 return stored_data[1];
@@ -318,20 +318,20 @@ export class Merkle {
         let local_index = (key >> (32 * path_index)) as u32;
         let stored_data: u64[] = [0, 0, 0, 0];
         this.get_simple(local_index, stored_data);
-        let is_leaf = is_leaf(stored_data[3]);
+        let is_leaf = Merkle.is_leaf(stored_data[3]);
 
         // LEAF_NODE must equal zero
         if (is_leaf) {
-            let is_empty = is_empty(stored_data[3]);
+            let is_empty = Merkle.is_empty(stored_data[3]);
             if (is_empty) {
-                self.set_simple(local_index, [key, data, 0, IS_EMPTY_BIT], None);
+                this.set_simple(local_index, [key, data, 0, IS_EMPTY_BIT], null);
             } else {
                 //crate::dbg!("smt set local hit:\n");
                 if (key == stored_data[0]) {
                     //crate::dbg!("current node for set is leaf:\n");
                     stored_data[0] = key;
                     stored_data[1] = data;
-                    self.set_simple(local_index, stored_data, None);
+                    this.set_simple(local_index, stored_data, null);
                 } else {
                     //crate::dbg!("key not match, creating sub node:\n");
                     // conflict of key here
@@ -342,18 +342,18 @@ export class Merkle {
                     stored_data = sub_merkle.root;
                     stored_data[3] = stored_data[3] | IS_NODE_BIT;
                     // 2 update the current node with the sub merkle tree
-                    self.set_simple(local_index, stored_data, None);
+                    this.set_simple(local_index, stored_data, null);
                 }
             }
         } else {
             //crate::dbg!("current node for set is node:\n");
             // make sure that there are only 2 level
             require(path_index == 0);
-            stored_data[3] = stored_data[3] & !IS_NODE_BIT;
+            stored_data[3] = stored_data[3] & (!IS_NODE_BIT);
             let sub_merkle = Merkle.load(stored_data);
             sub_merkle.smt_set_local_u64(key, path_index + 1, data);
             sub_merkle.root[3] = sub_merkle.root[3] | IS_NODE_BIT;
-            self.set_simple(local_index, sub_merkle.root, None);
+            this.set_simple(local_index, sub_merkle.root, null);
         }
     }
 }

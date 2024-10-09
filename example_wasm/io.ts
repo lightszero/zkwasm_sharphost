@@ -8,6 +8,7 @@ export enum InputMessageType
 }
 export enum Color
 {
+    Error=0,
     Black = 1,
     White = 2,
     End=3,

@@ -43,11 +43,13 @@ class Game {
             this.map=[0,0,0,0,0,0,0,0,0];
 
        
-        let state:u64[] = this.MerkleTree.smt_get_local([indexState,0,0,0],0);
-        if(state.length==0)
-            state=[Color.Black];
+        // let state:u64[] = this.MerkleTree.smt_get_local([indexState,0,0,0],0);
+        // if(state.length==0)
+        //     state=[Color.Black];
 
-        this.state=state[0] as Color;   
+        this.state=this.MerkleTree.smt_get_local_u64(indexState,0) as Color;   
+        if(this.state==Color.Error)
+            this.state=Color.Black;
     }
     DoStep(message:InputMessage): void {
         if(message.Type==InputMessageType.SayHello){
@@ -98,10 +100,10 @@ class Game {
         //更新MerkleTree 数据
         this.MerkleTree.smt_set_local([indexMap,0,0,0],0,this.map);
             
-        let statedata:u64[] =[this.state];
-        this.MerkleTree.smt_set_local([indexState,0,0,0],0,statedata);
-        //这个实现还有点问题
-        //this.MerkleTree.smt_set_local_u64(indexState,0,this.state as u64);
+        //let statedata:u64[] =[this.state];
+        //this.MerkleTree.smt_set_local([indexState,0,0,0],0,statedata);
+        
+        this.MerkleTree.smt_set_local_u64(indexState,0,this.state as u64);
     }
     IsEnd():boolean{
         
