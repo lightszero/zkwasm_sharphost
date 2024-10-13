@@ -68,6 +68,7 @@ namespace host
             {
                 context.Response.StatusCode = 200;
                 context.Response.ContentType = "text/plain;charset=utf-8";
+                context.Response.Headers["Access-Control-Allow-Origin"] = "*";
                 Console.WriteLine("Setup 返回:" + jsonResult.ToString());
                 await context.Response.WriteAsync(jsonResult.ToString());
             }
@@ -142,6 +143,7 @@ namespace host
             {
                 context.Response.StatusCode = 200;
                 context.Response.ContentType = "text/plain;charset=utf-8";
+                context.Response.Headers["Access-Control-Allow-Origin"] = "*";
                 Console.WriteLine("Prove 返回:" + jsonResult.ToString());
                 await context.Response.WriteAsync(jsonResult.ToString());
             }
@@ -162,6 +164,7 @@ namespace host
                 //读取url hash，wasm对应的hash
                 var hashWasm = context.Request.Query["hashWasm"].ToString();
                 var hashInput = context.Request.Query["hashInput"].ToString();
+
                 Console.WriteLine("hashWasm:" + hashWasm);
                 Console.WriteLine("hashInput:" + hashInput);
                 var b = WasmTool.GetSetupState(hashWasm, out var wasm);
@@ -195,6 +198,7 @@ namespace host
             {
                 context.Response.StatusCode = 200;
                 context.Response.ContentType = "application/octet-stream";
+                context.Response.Headers["Access-Control-Allow-Origin"] = "*";
                 Console.WriteLine("Prove 返回:" + outData.Length);
                 await context.Response.Body.WriteAsync(outData, 0, outData.Length);
                 context.Response.Body.Close();
@@ -268,6 +272,7 @@ namespace host
             {
                 context.Response.StatusCode = 200;
                 context.Response.ContentType = "text/plain;charset=utf-8";
+                context.Response.Headers["Access-Control-Allow-Origin"] = "*";
                 Console.WriteLine("Prove 返回:" + jsonResult.ToString());
                 await context.Response.WriteAsync(jsonResult.ToString());
             }
@@ -288,6 +293,7 @@ namespace host
                 //读取url hash，wasm对应的hash
                 var hashWasm = context.Request.Query["hashWasm"].ToString();
                 var hashInput = context.Request.Query["hashInput"].ToString();
+
                 Console.WriteLine("hashWasm:" + hashWasm);
                 Console.WriteLine("hashInput:" + hashInput);
                 var b = WasmTool.GetSetupState(hashWasm, out var wasm);
@@ -334,6 +340,7 @@ namespace host
             {
                 context.Response.StatusCode = 200;
                 context.Response.ContentType = "text/plain;charset=utf-8";
+                context.Response.Headers["Access-Control-Allow-Origin"] = "*";
                 Console.WriteLine("Prove 返回:" + jsonResult.ToString());
                 await context.Response.WriteAsync(jsonResult.ToString());
             }
@@ -374,6 +381,7 @@ namespace host
             {
                 context.Response.StatusCode = 200;
                 context.Response.ContentType = "text/plain;charset=utf-8";
+                context.Response.Headers["Access-Control-Allow-Origin"] = "*";
                 Console.WriteLine("Setup 返回:" + jsonResult.ToString());
                 await context.Response.WriteAsync(jsonResult.ToString());
             }
@@ -429,6 +437,7 @@ namespace host
             {
                 context.Response.StatusCode = 200;
                 context.Response.ContentType = "application/octet-stream";
+                context.Response.Headers["Access-Control-Allow-Origin"] = "*";
                 Console.WriteLine("onExecuteLogic 返回:" + result.Length);
                 await context.Response.Body.WriteAsync(result, 0, result.Length);
                 context.Response.Body.Close();
@@ -479,6 +488,7 @@ namespace host
             {
                 context.Response.StatusCode = 200;
                 context.Response.ContentType = "text/plain;charset=utf-8";
+                context.Response.Headers["Access-Control-Allow-Origin"] = "*";
                 Console.WriteLine("onUpdateRecord 返回:" + jsonResult.ToString());
                 await context.Response.WriteAsync(jsonResult.ToString());
             }
@@ -524,6 +534,7 @@ namespace host
             {
                 context.Response.StatusCode = 200;
                 context.Response.ContentType = "application/octet-stream";
+                context.Response.Headers["Access-Control-Allow-Origin"] = "*";
                 Console.WriteLine("onGetRecord 返回:" + result.Length);
                 await context.Response.Body.WriteAsync(result, 0, result.Length);
                 context.Response.Body.Close();

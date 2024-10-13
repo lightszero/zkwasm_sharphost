@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.SignalR;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -97,8 +98,23 @@ namespace host
                 outputs.Add(v);
 
             };
+            Wasmtime.CallerAction<Int32> wasm_require = (caller, v) =>
+            {
+
+                if (v == 0)
+                    throw new Exception("require zero.");
+
+            };
+            Wasmtime.CallerAction<Int32> wasm_print = (caller, v) =>
+            {
+
+                Console.Write((char)v);
+
+            };
             linker.Define("env", "wasm_input", Wasmtime.Function.FromCallback(store, wasm_input));
             linker.Define("env", "wasm_output", Wasmtime.Function.FromCallback(store, wasm_output));
+            linker.Define("env", "require", Wasmtime.Function.FromCallback(store, wasm_require));
+            linker.Define("env", "print", Wasmtime.Function.FromCallback(store, wasm_print));
             LinkMerkleFunc(linker, store);
             LinkCacheFunc(linker, store);
             LinkPoseidonFunc(linker, store);
