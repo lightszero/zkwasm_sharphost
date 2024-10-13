@@ -6,7 +6,7 @@ class MerkleRoot {
     v1: bigint = 14789582351289948625n;
     v2: bigint = 10919489180071018470n;
     v3: bigint = 10309858136294505219n;
-    v4: bigint = 28395800740367807661n;
+    v4: bigint = 2839580074036780766n;
 
 }
 let root = new MerkleRoot();
