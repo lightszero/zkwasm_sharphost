@@ -38,7 +38,7 @@ async function callLogicRemote(wasmhash: string, input: Uint8Array): Promise<Uin
             }
         }
         var req = http.request(op, (res) => {
-            console.log("http info." + res.statusMessage + ":" + res.statusCode);
+            //console.log("http info." + res.statusMessage + ":" + res.statusCode);
             let data = '';
             res.setEncoding("binary");
             res.on("data", (chunk) => {
@@ -48,7 +48,7 @@ async function callLogicRemote(wasmhash: string, input: Uint8Array): Promise<Uin
             res.on("end", () => {
                 // function OnServerReturn(data: string) {
                 let bin = str2bytes(data);
-                console.log("--服务器返回--" + bin);
+                //console.log("--服务器返回--" + bin);
 
                 resolve(bin);
 
@@ -61,7 +61,7 @@ async function callLogicRemote(wasmhash: string, input: Uint8Array): Promise<Uin
         );
         req.write(input, (res) => {
 
-            console.log("post info." + res?.message);
+            //console.log("post info." + res?.message);
 
         })
         req.end();
@@ -84,8 +84,8 @@ enum Grid {
     Black,
     White,
 }
-const game_wasm_hash = "50615A51F3410131F11BAFFE13C598EFD7F52F774D03086CA88918E0DF74B7CE_12606";
-const game_checkstate_wasm_hash = "29E150EF3596CAACBE6A5C9D0D7DD6EE847003F95A0C36A3C45562EC163477D4_8352";
+const game_wasm_hash = "19CB5785B2795A4008F71720E76E8040167EE016037A00E332157C286BB88BC4_17382";
+const game_checkstate_wasm_hash = "1C9F09482A0BD79DC4F52C3657B09AC78BB5F7581D23AE229D4E1D6C2156EC6D_11425";
 let state: GameState = GameState.Error;
 let map: Grid[] = [];
 async function rpc_getState(): Promise<GameState> {

@@ -18,6 +18,7 @@ declare function merkle_get(): u64
 
 import { Cache } from "./cache";
 import { PoseidonHasher } from "./poseidon";
+import { print } from "./lib";
 
 const LEAF_NODE: u64 = 0;
 const TREE_NODE: u64 = 1;
@@ -98,12 +99,14 @@ export class Merkle {
         merkle_getroot();
         merkle_getroot();
         merkle_getroot();
+
+        print("get_simple index="+index.toString()+" hash="+data[0].toString()+","+data[1].toString()+","+data[2].toString()+","+data[3].toString());
     }
 
 
     /// Set the raw leaf data of a merkle subtree but does enforced the get/set pair convention
     set_simple_unsafe(index: u32, data: u64[]): void {
-
+        print("set_simple_unsafe index="+index.toString()+" hash="+data[0].toString()+","+data[1].toString()+","+data[2].toString()+","+data[3].toString());
         // perform the set
         merkle_address(index as u64);
 
@@ -126,6 +129,7 @@ export class Merkle {
 
     /// Set the raw leaf data of a merkle subtree
     set_simple(index: u32, data: u64[], hint: u64[] | null): void {
+        
         //         // place a dummy get for merkle proof convension
         //         unsafe {
         merkle_address(index as u64);
@@ -161,19 +165,20 @@ export class Merkle {
     get(index: u32, pad: bool): CacheData {
         let hash: u64[] = [0,0,0,0];
         this.get_simple(index, hash);
-
+        print("get hash index="+index.toString()+" hash="+hash[0].toString()+","+hash[1].toString()+","+hash[2].toString()+","+hash[3].toString());
         let data = Cache.get_data(hash);
         if (data != null && data.length > 0) {
             // //             // FIXME: avoid copy here
             let hash_check = PoseidonHasher.hash(data, pad);
             // //             unsafe {
+            print("get hash_check");
             require(hash[0] == hash_check[0]);
             require(hash[1] == hash_check[1]);
             require(hash[2] == hash_check[2]);
             require(hash[3] == hash_check[3]);
             // //             }
         } else {
-
+            print("get 2");
             require(hash[0] == 0);
             require(hash[1] == 0);
             require(hash[2] == 0);
@@ -190,6 +195,7 @@ export class Merkle {
     //     /// safe version of set which enforces a get before set
     set(index: u32, data: u64[], pad: bool, hint: u64[] | null): void {
         let hash = PoseidonHasher.hash(data, pad);
+        print("set hash index="+index.toString()+" hash="+hash[0].toString()+","+hash[1].toString()+","+hash[2].toString()+","+hash[3].toString());
         Cache.store_data(hash, data);
         this.set_simple(index, hash, hint);
     }
@@ -197,11 +203,13 @@ export class Merkle {
     //     /// unsafe version of set which does not enforce the get/set pair convention
     set_unsafe(index: u32, data: u64[], pad: bool): void {
         let hash = PoseidonHasher.hash(data, pad);
+        print("set_unsafe hash index="+index.toString()+" hash="+hash[0].toString()+","+hash[1].toString()+","+hash[2].toString()+","+hash[3].toString());
         Cache.store_data(hash, data);
         this.set_simple_unsafe(index, hash);
     }
 
     smt_get_local(key: u64[], path_index: u32): u64[] {
+        print("smt_get_local")
         require(path_index < 8);
         let local_index = (key[path_index / 2] >> (32 * (path_index % 2))) as u32;
         // pad is true since the leaf might the root of a sub merkle
@@ -230,20 +238,21 @@ export class Merkle {
     }
 
     smt_set_local(key: u64[], path_index: u32, data: u64[]): void {
+        print("smt_set_local")
         require(path_index < 8);
         let local_index = (key[path_index / 2] >> (32 * (path_index % 2))) as u32;
         let result = this.get(local_index, true);
         if (result.data == null || result.data.length == 0) {
             // let root = self.root;
-            // crate::dbg!("smt add new leaf {:?} {:?}\n", root, data);
+            print("smt add new leaf ");
             let node_buf = Merkle.set_smt_data(LEAF_NODE, key, data);
 
             this.set_unsafe(local_index, node_buf, true);
 
         } else {
-            //crate::dbg!("smt set local hit:\n");
+            print("smt set local hit:");
             if ((result.data[0] & 0x1) == LEAF_NODE) {
-                //crate::dbg!("current node for set is leaf:\n");
+                print("current node for set is leaf:");
                 if (Merkle.data_matches_key(result.data, key)) {
                     //crate::dbg!("key match update data:\n");
                     // if hit the current node
@@ -269,7 +278,7 @@ export class Merkle {
                     this.set(local_index, node_buf.slice(0, 5), true, null);
                 }
             } else {
-                //crate::dbg!("current node for set is node:\n");
+                print("current node for set is node:\n");
                 // the node is already a sub merkle
                 require((result.data[0] & 0x1) == TREE_NODE);
                 let sub_merkle = Merkle.load(result.data.slice(1, 5));

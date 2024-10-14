@@ -272,6 +272,14 @@ namespace host
             linker.Define("env", "cache_fetch_data", Wasmtime.Function.FromCallback(store, cache_fetch_data));
         }
 
+        [ThreadStatic]
+        static SHA256 sha256;
+        [ThreadStatic]
+        static List<byte> data = new List<byte>();
+        [ThreadStatic]
+        static byte[] result;
+        [ThreadStatic]
+        static int resultseek = 0;
         private static void LinkPoseidonFunc(Linker linker, Store store)
         {
             //pub fn poseidon_new(x: u64);
@@ -281,15 +289,35 @@ namespace host
 
             Wasmtime.CallerAction<Int64> poseidon_new = (caller, i) =>
             {
-                Poseidon.poseidon_new((ulong)i);
+                if (sha256 == null)
+                    sha256 = SHA256.Create();
+                if (data == null)
+                    data = new List<byte>();
+                resultseek = 0;
+                if (i == 1)
+                {
+                    data.Clear();
+                   
+                    result = null;
+                }
+                //Poseidon.poseidon_new((ulong)i);
             };
             Wasmtime.CallerAction<Int64> poseidon_push = (caller, i) =>
             {
-                Poseidon.poseidon_push((ulong)i);
+                var bts =BitConverter.GetBytes((ulong)i);
+                data.AddRange(bts);
+              //  Poseidon.poseidon_push((ulong)i);
             };
             Wasmtime.CallerFunc<Int64> poseidon_finalize = (caller) =>
             {
-                return (long)Poseidon.poseidon_finalize();
+                if(resultseek==0)
+                {
+                    result = sha256.ComputeHash(data.ToArray());
+                }
+                var v = BitConverter.ToUInt64(result, resultseek * 8);
+                resultseek++;
+                return (long)v;
+               // return (long)Poseidon.poseidon_finalize();
             };
             linker.Define("env", "poseidon_new", Wasmtime.Function.FromCallback(store, poseidon_new));
             linker.Define("env", "poseidon_push", Wasmtime.Function.FromCallback(store, poseidon_push));

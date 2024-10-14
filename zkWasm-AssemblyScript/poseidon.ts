@@ -7,6 +7,8 @@ declare function poseidon_push(x: u64): void
 @external("env", "poseidon_finalize")
 declare function poseidon_finalize(): u64
 
+import { print } from "./lib";
+
 export class PoseidonHasher {
     value0: i32 = 0;
     constructor() {
@@ -14,6 +16,7 @@ export class PoseidonHasher {
         this.value0 = 0;
     }
     static hash(data: u64[], padding: bool): u64[] {
+        print("hash pad="+padding.toString()+" data="+data.length.toString());
         let hasher = new PoseidonHasher();
         if (padding) {
             let group = data.length / 3;

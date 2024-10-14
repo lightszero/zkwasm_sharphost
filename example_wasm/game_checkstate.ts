@@ -36,7 +36,7 @@ export function logic(input: u64[]): u64[] {
     if (cmd == CmdType.GetMapState) {
         let merkleRoot = [input[1], input[2], input[3], input[4]];
         let MerkleTree: Merkle = Merkle.load(merkleRoot);
-        let status = MerkleTree.smt_get_local([indexState, 0, 0, 0], 0);
+        let status = MerkleTree.smt_get_local([indexMap, 0, 0, 0], 0);
         print("status len:" + status.length.toString());
         if (status.length == 0)
             return [cmd, 0];
