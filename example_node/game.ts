@@ -12,24 +12,7 @@ class MerkleRoot {
 let root = new MerkleRoot();
 //const serverurl = "18.162.245.133";
 const serverurl = "127.0.0.1";
-const MERKLE_TREE_HEIGHT = 32;
-async function getDataFromMerkle(root: string, address: number): Promise<bigint[]> {
 
-    var index = BigInt(address) + 1n << BigInt(MERKLE_TREE_HEIGHT) - 1n;
-
-    var body = { "jsonrpc": "2.0", "id": 1, "method": "get_leaf", "params": { "root": root, "index": index.toString() } };
-
-    var r = await fetch("http://18.162.245.133:999/", {
-        headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-        },
-        "body": JSON.stringify(body), "method": "POST"
-    });
-    var result = JSON.parse(await r.text());
-    console.log(result);
-    return [BigInt(0)];
-}
 function str2bytes(data: string): Uint8Array {
     var rdata = new Uint8Array(data.length);
     for (var i = 0; i < data.length; i++) {
@@ -58,7 +41,6 @@ async function callLogicRemote(wasmhash: string, input: Uint8Array): Promise<Uin
             res.setEncoding("binary");
             res.on("data", (chunk) => {
                 data += chunk;;
-                console.log("receive." + chunk);
             }
             );
             res.on("end", () => {
@@ -88,36 +70,162 @@ async function callLogicRemote(wasmhash: string, input: Uint8Array): Promise<Uin
 
 
 }
-async function onInit() {
-    getDataFromMerkle("0000", 789);
+
+enum GameState
+{
+    Error=0,
+    Black = 1,
+    White = 2,
+    End=3,
 }
+enum Grid
+{
+    Empty,
+    Black,
+    White,
+}
+const game_checkstate_wasm_hash ="29E150EF3596CAACBE6A5C9D0D7DD6EE847003F95A0C36A3C45562EC163477D4_8352";
+let state:GameState =  GameState.Error;
+let map:Grid[] =[];
+async function rpc_getState():Promise<GameState>
+{
+    let cmd = 1; // get Game State
+    let input = new Uint8Array(8 * 6);
+  
+    let dv = new DataView(input.buffer);
+    dv.setBigUint64(0,BigInt(5),false);//先写的是长度
+    dv.setBigUint64(8, BigInt(cmd), false);
+
+    dv.setBigUint64(16, root.v1, false);
+    dv.setBigUint64(24, root.v2, false);
+    dv.setBigUint64(32, root.v3, false);
+    dv.setBigUint64(36, root.v4, false);
+    var data = await callLogicRemote(game_checkstate_wasm_hash,input);
+    if(data.length==4)
+    {
+        var dvout =new DataView(data.buffer);
+        var errcode = dvout.getInt32(0,true);
+        console.log("rpc_getState 服务器错误:"+errcode);
+        return GameState.Error;
+    }
+    else
+    {
+        var dvout =new DataView(data.buffer);
+        var buflen =dvout.getBigUint64(0,false);
+        var cmdrtn =dvout.getBigUint64(8,false);
+        var state = Number(dvout.getBigUint64(16,false)) as GameState;
+        if(state==GameState.Error) 
+            state= GameState.Black;//默认状态，黑子
+        return state ;
+    }
+}
+async function rpc_getMap():Promise<Grid[]>{
+    let cmd = 2; // get Map State
+    let input = new Uint8Array(8 * 6);
+  
+    let dv = new DataView(input.buffer);
+    dv.setBigUint64(0,BigInt(5),false);//先写的是长度
+    dv.setBigUint64(8, BigInt(cmd), false);
+
+    dv.setBigUint64(16, root.v1, false);
+    dv.setBigUint64(24, root.v2, false);
+    dv.setBigUint64(32, root.v3, false);
+    dv.setBigUint64(36, root.v4, false);
+    var data = await callLogicRemote(game_checkstate_wasm_hash,input);
+    if(data.length==4)
+        {
+            var dvout =new DataView(data.buffer);
+            var errcode = dvout.getInt32(0,true);
+            console.log("rpc_getMap 服务器错误:"+errcode);
+            return null;
+        }
+        else
+        {
+            var dvout =new DataView(data.buffer);
+            var buflen =dvout.getBigUint64(0,false);
+            var cmdrtn =dvout.getBigUint64(8,false);
+            var maplen =Number( dvout.getBigUint64(16,false));
+            if(maplen==0)
+            {
+                return null;
+            }
+            else
+            {
+                var seek=24;
+                var map:Grid[] = [];
+
+                for(var i=0;i<9;i++)
+                {
+                    var g=Number( dvout.getBigUint64(seek,false)) as Grid;
+                    seek+=8;
+                    map.push(g);
+                }
+                return map;
+            }
+        }
+}
+async function UpdateGame() {
+ 
+    state = await rpc_getState();
+    map = await rpc_getMap();
+    if(map==null||map.length==0)
+    {
+        map =[];
+        for(var i=0;i<9;i++)
+        {
+            map.push(Grid.Empty);
+        }
+    }
+
+    console.log("棋盘\tX:0\tX:1\tX:2");
+    for(var y=0;y<3;y++)
+    {
+        var txt="Y:"+y +"\t";
+        for(var x=0;x<3;x++)
+        {
+            if(map[y*3+x]==  Grid.Empty)
+                txt+="-\t";
+            else if(map[y*3+x]==  Grid.Black)
+                txt+="B\t";
+            else if(map[y*3+x]==  Grid.White)
+                txt+="w\t";
+        }
+        console.log(txt);
+    }
+
+    if(state== GameState.End)
+        console.log("游戏状态:游戏结束");
+    else if(state== GameState.Black)
+        console.log("游戏状态:黑棋落子");
+    else if(state== GameState.White)
+        console.log("游戏状态:白棋落子");
+    else if(state== GameState.Error)
+        console.log("游戏状态:错误");
+}
+
+
 
 //重新开始游戏
 function onRestart() {
     root = new MerkleRoot();
 }
 async function onTest() {
-    let cmd = 1;
-    let input = new Uint8Array(8 * 100);
-    let dv = new DataView(input.buffer);
-    dv.setBigUint64(0, BigInt(cmd), false);
-    let _root = new MerkleRoot();
-    dv.setBigUint64(8, _root.v1, false);
-    dv.setBigUint64(16, _root.v2, false);
-    dv.setBigUint64(24, _root.v3, false);
-    dv.setBigUint64(32, _root.v4, false);
-    //call game_checkstate.wasm
-    var r = await callLogicRemote("32078AD3998533F52BB1FF592A0129C0FDAE8B830A70B082C3E2478EFDC777F7_6055", input);
-    console.log(r);
+    onRestart();
+    state = await rpc_getState();
+    console.log("state="+state);
 }
 async function main() {
-    await onTest();
+   
 
     console.log("三子棋游戏");
     console.log("输入 exit 退出游戏");
     console.log("输入 reset 重开游戏");
     console.log("输入 put x y 落子");
+
+    
+
     while (true) {
+        await UpdateGame();
         var input = readline.question("-->");
         var tags = input.split(" ");
         if (tags[0] == "exit") {
@@ -136,7 +244,5 @@ async function main() {
         }
     }
 
-    //初始化
-    await onInit();
 }
 main();

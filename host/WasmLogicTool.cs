@@ -114,7 +114,7 @@ namespace host
             linker.Define("env", "wasm_input", Wasmtime.Function.FromCallback(store, wasm_input));
             linker.Define("env", "wasm_output", Wasmtime.Function.FromCallback(store, wasm_output));
             linker.Define("env", "require", Wasmtime.Function.FromCallback(store, wasm_require));
-            linker.Define("env", "print", Wasmtime.Function.FromCallback(store, wasm_print));
+            linker.Define("env", "print_char", Wasmtime.Function.FromCallback(store, wasm_print));
             LinkMerkleFunc(linker, store);
             LinkCacheFunc(linker, store);
             LinkPoseidonFunc(linker, store);
