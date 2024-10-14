@@ -15,9 +15,9 @@ var buf = fs.readFileSync(filename);
 console.log("filelen = " + buf.byteLength);
 
 let op: http.RequestOptions = {
-    //host: "18.162.245.133",
+    host: "18.162.245.133",
     //host: "18.167.90.229",
-    host: "127.0.0.1",
+    //host: "127.0.0.1",
     port: 888,
     path: "/setupLogic",
     method: "post",

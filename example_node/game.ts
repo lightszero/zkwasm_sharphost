@@ -12,8 +12,8 @@ class MerkleRoot {
     }
 }
 let root = new MerkleRoot();
-//const serverurl = "18.162.245.133";
-const serverurl = "127.0.0.1";
+const serverurl = "18.162.245.133";
+//const serverurl = "127.0.0.1";
 
 function str2bytes(data: string): Uint8Array {
     var rdata = new Uint8Array(data.length);
@@ -26,8 +26,6 @@ async function callLogicRemote(wasmhash: string, input: Uint8Array): Promise<Uin
 
     var p = new Promise<Uint8Array>((resolve, reject) => {
         let op: http.RequestOptions = {
-            //host: "18.162.245.133",
-            //host: "18.167.90.229",
             host: serverurl,
             port: 888,
             path: "/executeLogic?hash=" + wasmhash,
