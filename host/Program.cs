@@ -41,7 +41,7 @@ namespace host
             serv.Start(port);
 
             //test poseidon
-            Poseidon.poseidon_new(1);
+            //Poseidon.poseidon_new(1);
 
             while (true)
             {
