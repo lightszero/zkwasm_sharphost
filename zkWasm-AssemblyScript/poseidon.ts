@@ -78,8 +78,8 @@ export class PoseidonHasher {
         this.value0 += 1;
         for (var i2 = this.value0; i2 < 32; i2++) {
             poseidon_push(0);
-            this.value0 += 1;
-            poseidon_push(0);
+            //this.value0 += 1;//这个已经没意义了
+            //poseidon_push(0);//这个似乎不应该
         }
 
         let outdata:u64[]=[];
